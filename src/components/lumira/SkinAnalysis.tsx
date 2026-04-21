@@ -126,6 +126,15 @@ export function SkinAnalysis() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values]);
 
+  // Voice command: re-run analysis on demand
+  useEffect(() => {
+    const off = onVoiceCommand((cmd) => {
+      if (cmd === "analyze-skin") fetchInsight(values);
+    });
+    return off;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values]);
+
   const simulate = (key: MetricKey) => {
     setValues((prev) => {
       const current = prev[key];
