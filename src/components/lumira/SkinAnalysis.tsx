@@ -190,6 +190,24 @@ export function SkinAnalysis() {
           </p>
         )}
       </div>
+      {history.length > 1 && (
+        <div className="mt-3 space-y-1.5 border-t border-accent/10 pt-2.5">
+          <p className="text-[9px] uppercase tracking-widest text-muted-foreground/60">
+            Recent insights
+          </p>
+          {history.slice(1).map((h) => (
+            <div key={h.id} className="flex items-start gap-2">
+              <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-accent/40" />
+              <p className="flex-1 text-[10px] leading-relaxed text-muted-foreground/70 line-clamp-2">
+                {h.text}
+              </p>
+              <span className="shrink-0 text-[9px] uppercase tracking-wider text-muted-foreground/50">
+                {formatRelative(h.ts, now)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </GlassPanel>
   );
 }
