@@ -106,10 +106,10 @@ export function VoiceVisualizer() {
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const wantListeningRef = useRef(false);
 
-  const triggerPreset = (preset: Preset) => {
+  const triggerPreset = (preset: Preset, source: "voice" | "tap" = "tap") => {
     setFeedback(preset.feedback);
     setActivePreset(preset.command);
-    emitVoiceCommand(preset.command);
+    emitVoiceCommand(preset.command, source);
     window.setTimeout(() => {
       setFeedback("");
       setActivePreset(null);
