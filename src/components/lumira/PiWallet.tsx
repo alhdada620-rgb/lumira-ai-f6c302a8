@@ -1,7 +1,7 @@
 import { Wallet, CheckCircle2, Loader2, LogOut, Copy } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
-import { onVoiceCommand } from "./voice-events";
+import { onVoiceCommand, reportCommandResult, type CommandSource } from "./voice-events";
 
 interface PiUser {
   username: string;
@@ -20,27 +20,44 @@ export function PiWallet() {
   const [status, setStatus] = useState<"idle" | "connecting" | "connected">("idle");
   const [user, setUser] = useState<PiUser | null>(null);
   const [copied, setCopied] = useState(false);
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
-  const connect = async () => {
-    if (status !== "idle") return;
+  const connect = async (source?: CommandSource) => {
+    if (statusRef.current !== "idle") {
+      if (source) {
+        reportCommandResult({
+          command: "connect-pi-wallet", source, status: "error",
+          message: statusRef.current === "connected" ? "Wallet already connected" : "Connection in progress",
+        });
+      }
+      return;
+    }
     setStatus("connecting");
     // Simulate Pi SDK login flow: request → consent → permissions → success
     await new Promise((r) => setTimeout(r, 1400));
-    setUser({
+    const newUser = {
       username: "lumira_pioneer",
       uid: makeAddress(),
       balance: +(Math.random() * 250 + 12).toFixed(4),
-    });
+    };
+    setUser(newUser);
     setStatus("connected");
+    if (source) {
+      reportCommandResult({
+        command: "connect-pi-wallet", source, status: "success",
+        message: `Authenticated as @${newUser.username}`,
+      });
+    }
   };
 
   // Voice / preset command integration
   useEffect(() => {
-    return onVoiceCommand((cmd) => {
-      if (cmd === "connect-pi-wallet") void connect();
+    return onVoiceCommand((cmd, source) => {
+      if (cmd === "connect-pi-wallet") void connect(source);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, []);
 
   const disconnect = () => {
     setUser(null);
