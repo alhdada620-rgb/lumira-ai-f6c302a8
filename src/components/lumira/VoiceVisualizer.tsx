@@ -143,7 +143,7 @@ export function VoiceVisualizer() {
       if (combined) setTranscript(combined);
       const check = finalText || interim;
       const preset = check ? matchPreset(check) : null;
-      if (preset) triggerPreset(preset);
+      if (preset) triggerPreset(preset, "voice");
     };
 
     rec.onerror = (e) => {
