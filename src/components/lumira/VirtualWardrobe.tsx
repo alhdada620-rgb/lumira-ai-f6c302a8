@@ -206,7 +206,7 @@ export function VirtualWardrobe() {
             Try a different brand or keyword
           </p>
         </div>
-      ) : (
+      ) : view === "grid" ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((item) => {
             const style = BRAND_STYLE[item.brand];
@@ -282,6 +282,55 @@ export function VirtualWardrobe() {
             );
           })}
         </div>
+      ) : (
+        <ul className="divide-y divide-primary/10 overflow-hidden rounded-lg border border-primary/20 bg-card/20 backdrop-blur">
+          {filtered.map((item) => {
+            const style = BRAND_STYLE[item.brand];
+            const wasTried = lastTried === item.id;
+            return (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 px-2.5 py-2 transition hover:bg-primary/5"
+              >
+                {/* Swatch + glyph */}
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-primary/20">
+                  <div className="absolute inset-0" style={{ background: item.gradient }} />
+                  <div
+                    className={`absolute inset-0 flex items-center justify-center text-[10px] leading-none ${style.glyphBg} ${style.glyphText} opacity-90`}
+                    aria-label={`${item.brand} logo`}
+                    title={item.brand}
+                    style={{ background: undefined, mixBlendMode: "normal" }}
+                  >
+                    <span className={`flex h-4 w-4 items-center justify-center rounded ${style.glyphBg}`}>
+                      {BRAND_GLYPH[item.brand]}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs text-foreground">{item.name}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {item.brand} · {item.category} · {item.tag}
+                  </p>
+                </div>
+
+                {/* Try On */}
+                <button
+                  onClick={() => handleTryOn(item)}
+                  className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-[10px] uppercase tracking-widest transition ${
+                    wasTried
+                      ? "border-accent/60 bg-accent/15 text-accent shadow-[var(--glow-soft)]"
+                      : "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  }`}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {wasTried ? "Sent" : "Try On"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </GlassPanel>
   );
