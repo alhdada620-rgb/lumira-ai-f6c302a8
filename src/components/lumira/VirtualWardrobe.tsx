@@ -98,6 +98,7 @@ export function VirtualWardrobe() {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<CategoryKey>("all");
   const [lastTried, setLastTried] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>("grid");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -140,7 +141,7 @@ export function VirtualWardrobe() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {CATEGORIES.map((c) => {
             const isActive = cat === c.key;
             return (
@@ -157,6 +158,40 @@ export function VirtualWardrobe() {
               </button>
             );
           })}
+
+          {/* View toggle */}
+          <div
+            role="group"
+            aria-label="Wardrobe view"
+            className="ml-1 inline-flex overflow-hidden rounded-full border border-primary/25 bg-card/30 backdrop-blur"
+          >
+            <button
+              type="button"
+              onClick={() => setView("grid")}
+              aria-pressed={view === "grid"}
+              title="Grid view"
+              className={`flex h-7 w-7 items-center justify-center transition ${
+                view === "grid"
+                  ? "bg-accent/15 text-accent shadow-[var(--glow-soft)]"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              aria-pressed={view === "list"}
+              title="List view"
+              className={`flex h-7 w-7 items-center justify-center border-l border-primary/25 transition ${
+                view === "list"
+                  ? "bg-accent/15 text-accent shadow-[var(--glow-soft)]"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
