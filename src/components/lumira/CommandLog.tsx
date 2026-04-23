@@ -9,6 +9,7 @@ const COMMAND_LABELS: Record<VoiceCommand, string> = {
   "stop-mirror": "Stop mirror",
   "connect-pi-wallet": "Connect Pi wallet",
   "next-outfit": "Next outfit",
+  "try-on-item": "Try on item",
 };
 
 type LogEntry = CommandResult & { id: number };

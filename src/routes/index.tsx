@@ -3,6 +3,7 @@ import { DailyDashboard } from "@/components/lumira/DailyDashboard";
 import { SkinAnalysis } from "@/components/lumira/SkinAnalysis";
 import { HealthVitals } from "@/components/lumira/HealthVitals";
 import { VirtualTryOn } from "@/components/lumira/VirtualTryOn";
+import { VirtualWardrobe } from "@/components/lumira/VirtualWardrobe";
 import { VoiceVisualizer } from "@/components/lumira/VoiceVisualizer";
 import { MirrorCamera } from "@/components/lumira/MirrorCamera";
 import { PiWallet } from "@/components/lumira/PiWallet";
@@ -56,6 +57,7 @@ function Index() {
           <VirtualTryOn />
           <PiWallet />
           <CommandLog />
+          <VirtualWardrobe />
         </div>
 
         {/* Signature Footer */}
