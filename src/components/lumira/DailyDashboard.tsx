@@ -1,9 +1,12 @@
 import { Cloud, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
+import { useWallet } from "./wallet-context";
 
 export function DailyDashboard() {
   const [now, setNow] = useState<Date | null>(null);
+  const { balance, todayDelta } = useWallet();
+
   useEffect(() => {
     setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -12,6 +15,13 @@ export function DailyDashboard() {
 
   const time = now ? now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
   const date = now ? now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) : "\u00a0";
+
+  const formattedBalance = balance.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const deltaPositive = todayDelta >= 0;
+  const deltaLabel = `${deltaPositive ? "+" : "−"}${Math.abs(todayDelta).toFixed(2)} TODAY`;
 
   return (
     <GlassPanel className="col-span-full lg:col-span-2">
@@ -40,7 +50,7 @@ export function DailyDashboard() {
           </div>
         </div>
 
-        {/* Pi Wallet */}
+        {/* Pi Wallet — balance only, no fiat conversion */}
         <div className="text-center md:text-right">
           <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.3em] text-muted-foreground md:justify-end">
             <Wallet className="h-3 w-3 text-accent" />
@@ -48,11 +58,18 @@ export function DailyDashboard() {
           </div>
           <div className="mt-1 flex items-baseline justify-center gap-1.5 md:justify-end">
             <span className="text-3xl font-light text-glow-accent">π</span>
-            <span className="font-light text-4xl tabular-nums text-glow-accent">1,247.83</span>
+            <span className="font-light text-4xl tabular-nums text-glow-accent">{formattedBalance}</span>
           </div>
-          <div className="mt-1 text-xs uppercase tracking-widest text-emerald-400/90">+12.4 TODAY</div>
+          <div
+            className={`mt-1 text-xs uppercase tracking-widest ${
+              deltaPositive ? "text-emerald-400/90" : "text-destructive/90"
+            }`}
+          >
+            {deltaLabel}
+          </div>
         </div>
       </div>
     </GlassPanel>
   );
 }
+
