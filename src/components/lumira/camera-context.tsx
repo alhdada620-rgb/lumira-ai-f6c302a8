@@ -1,37 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 
-const AR_OVERLAY_STORAGE_KEY = "lumira:ar-overlay";
-
-function readPersistedOverlay(): AROverlay | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(AR_OVERLAY_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<AROverlay>;
-    if (
-      !parsed ||
-      typeof parsed.id !== "string" ||
-      typeof parsed.label !== "string" ||
-      typeof parsed.color !== "string" ||
-      (parsed.kind !== "outfit" &&
-        parsed.kind !== "lipstick" &&
-        parsed.kind !== "eyeliner" &&
-        parsed.kind !== "blush")
-    ) {
-      return null;
-    }
-    return {
-      id: parsed.id,
-      kind: parsed.kind,
-      label: parsed.label,
-      color: parsed.color,
-      sub: typeof parsed.sub === "string" ? parsed.sub : undefined,
-      ts: typeof parsed.ts === "number" ? parsed.ts : Date.now(),
-    };
-  } catch {
-    return null;
-  }
-}
+const AR_OVERLAY_STORAGE_KEY = "lumira:ar-overlay-history";
+const MAX_HISTORY = 20;
 
 export type AROverlayKind = "outfit" | "lipstick" | "eyeliner" | "blush";
 
@@ -48,6 +18,61 @@ export interface AROverlay {
   ts: number;
 }
 
+/**
+ * History entries can be a real overlay OR `null` (representing "no overlay" /
+ * cleared state). Keeping nulls in history lets users undo a Reset and get the
+ * previous look back.
+ */
+type HistoryEntry = AROverlay | null;
+
+interface PersistedState {
+  history: HistoryEntry[];
+  cursor: number;
+}
+
+function isAROverlay(value: unknown): value is AROverlay {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Partial<AROverlay>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.label === "string" &&
+    typeof v.color === "string" &&
+    (v.kind === "outfit" || v.kind === "lipstick" || v.kind === "eyeliner" || v.kind === "blush")
+  );
+}
+
+function readPersistedState(): PersistedState {
+  const empty: PersistedState = { history: [], cursor: -1 };
+  if (typeof window === "undefined") return empty;
+  try {
+    const raw = window.localStorage.getItem(AR_OVERLAY_STORAGE_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw) as Partial<PersistedState>;
+    if (!parsed || !Array.isArray(parsed.history)) return empty;
+    const history: HistoryEntry[] = parsed.history.map((entry) => {
+      if (entry === null) return null;
+      if (isAROverlay(entry)) {
+        return {
+          id: entry.id,
+          kind: entry.kind,
+          label: entry.label,
+          color: entry.color,
+          sub: typeof entry.sub === "string" ? entry.sub : undefined,
+          ts: typeof entry.ts === "number" ? entry.ts : Date.now(),
+        };
+      }
+      return null;
+    });
+    const cursor =
+      typeof parsed.cursor === "number" && parsed.cursor >= -1 && parsed.cursor < history.length
+        ? parsed.cursor
+        : history.length - 1;
+    return { history, cursor };
+  } catch {
+    return empty;
+  }
+}
+
 interface CameraContextValue {
   stream: MediaStream | null;
   active: boolean;
@@ -59,6 +84,14 @@ interface CameraContextValue {
   arOverlay: AROverlay | null;
   setAROverlay: (overlay: Omit<AROverlay, "ts"> | null) => void;
   clearAROverlay: () => void;
+  /** Undo / redo controls for the AR overlay timeline */
+  canUndoAR: boolean;
+  canRedoAR: boolean;
+  undoAR: () => void;
+  redoAR: () => void;
+  /** Number of entries in the AR overlay history (for HUD display) */
+  arHistoryLength: number;
+  arHistoryIndex: number;
 }
 
 const CameraContext = createContext<CameraContextValue | null>(null);
@@ -67,7 +100,7 @@ export function CameraProvider({ children }: { children: ReactNode }) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [arOverlay, setAROverlayState] = useState<AROverlay | null>(() => readPersistedOverlay());
+  const [{ history, cursor }, setHistoryState] = useState<PersistedState>(() => readPersistedState());
   const streamRef = useRef<MediaStream | null>(null);
 
   const stop = useCallback(() => {
@@ -95,45 +128,106 @@ export function CameraProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const setAROverlay = useCallback((overlay: Omit<AROverlay, "ts"> | null) => {
-    setAROverlayState(overlay ? { ...overlay, ts: Date.now() } : null);
+  /** Push a new history entry, truncating any redo tail and capping the stack. */
+  const pushHistory = useCallback((entry: HistoryEntry) => {
+    setHistoryState((prev) => {
+      const current = prev.cursor >= 0 ? prev.history[prev.cursor] : null;
+      // Skip no-op pushes (same id, same kind, or both null).
+      const sameAsCurrent =
+        (current === null && entry === null) ||
+        (current !== null && entry !== null && current.id === entry.id && current.kind === entry.kind);
+      if (sameAsCurrent) return prev;
+
+      const truncated = prev.history.slice(0, prev.cursor + 1);
+      const next = [...truncated, entry];
+      // Cap history length, preserving the newest entries.
+      const overflow = Math.max(0, next.length - MAX_HISTORY);
+      const trimmed = overflow > 0 ? next.slice(overflow) : next;
+      return { history: trimmed, cursor: trimmed.length - 1 };
+    });
   }, []);
 
-  const clearAROverlay = useCallback(() => setAROverlayState(null), []);
+  const setAROverlay = useCallback(
+    (overlay: Omit<AROverlay, "ts"> | null) => {
+      pushHistory(overlay ? { ...overlay, ts: Date.now() } : null);
+    },
+    [pushHistory],
+  );
 
-  // Persist the active AR overlay so it survives page reloads.
+  const clearAROverlay = useCallback(() => {
+    pushHistory(null);
+  }, [pushHistory]);
+
+  const undoAR = useCallback(() => {
+    setHistoryState((prev) => (prev.cursor > -1 ? { ...prev, cursor: prev.cursor - 1 } : prev));
+  }, []);
+
+  const redoAR = useCallback(() => {
+    setHistoryState((prev) =>
+      prev.cursor < prev.history.length - 1 ? { ...prev, cursor: prev.cursor + 1 } : prev,
+    );
+  }, []);
+
+  // Persist history + cursor so undo/redo survives reloads.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      if (arOverlay) {
-        window.localStorage.setItem(AR_OVERLAY_STORAGE_KEY, JSON.stringify(arOverlay));
-      } else {
+      if (history.length === 0) {
         window.localStorage.removeItem(AR_OVERLAY_STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(
+          AR_OVERLAY_STORAGE_KEY,
+          JSON.stringify({ history, cursor }),
+        );
       }
     } catch {
       // ignore quota / privacy-mode failures
     }
-  }, [arOverlay]);
+  }, [history, cursor]);
 
   useEffect(() => () => stop(), [stop]);
 
-  return (
-    <CameraContext.Provider
-      value={{
-        stream,
-        active: !!stream,
-        error,
-        starting,
-        start,
-        stop,
-        arOverlay,
-        setAROverlay,
-        clearAROverlay,
-      }}
-    >
-      {children}
-    </CameraContext.Provider>
+  const arOverlay = cursor >= 0 ? history[cursor] : null;
+  const canUndoAR = cursor > -1;
+  const canRedoAR = cursor < history.length - 1;
+
+  const value = useMemo<CameraContextValue>(
+    () => ({
+      stream,
+      active: !!stream,
+      error,
+      starting,
+      start,
+      stop,
+      arOverlay,
+      setAROverlay,
+      clearAROverlay,
+      canUndoAR,
+      canRedoAR,
+      undoAR,
+      redoAR,
+      arHistoryLength: history.length,
+      arHistoryIndex: cursor,
+    }),
+    [
+      stream,
+      error,
+      starting,
+      start,
+      stop,
+      arOverlay,
+      setAROverlay,
+      clearAROverlay,
+      canUndoAR,
+      canRedoAR,
+      undoAR,
+      redoAR,
+      history.length,
+      cursor,
+    ],
   );
+
+  return <CameraContext.Provider value={value}>{children}</CameraContext.Provider>;
 }
 
 export function useCamera() {
