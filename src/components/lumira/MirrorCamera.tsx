@@ -279,7 +279,6 @@ export function MirrorCamera() {
             </div>
           </div>
         )}
-        )}
       </div>
     </GlassPanel>
   );
