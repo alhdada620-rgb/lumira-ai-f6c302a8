@@ -111,6 +111,69 @@ export function MirrorCamera() {
             </div>
           )}
 
+          {/* AR overlay (Smart Catalog placeholder filter) */}
+          {arOverlay && active && (
+            <>
+              {arOverlay.kind === "outfit" ? (
+                <div
+                  className="pointer-events-none absolute inset-0 transition-opacity"
+                  style={{
+                    background: arOverlay.color,
+                    opacity: 0.42,
+                    mixBlendMode: "overlay",
+                  }}
+                />
+              ) : arOverlay.kind === "lipstick" ? (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-[68%] h-[6%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[6px]"
+                  style={{ background: arOverlay.color, opacity: 0.7, mixBlendMode: "multiply" }}
+                />
+              ) : arOverlay.kind === "blush" ? (
+                <>
+                  <div
+                    className="pointer-events-none absolute left-[28%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
+                    style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                  />
+                  <div
+                    className="pointer-events-none absolute left-[72%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
+                    style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                  />
+                </>
+              ) : (
+                <>
+                  <div
+                    className="pointer-events-none absolute left-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
+                    style={{ background: arOverlay.color, opacity: 0.85 }}
+                  />
+                  <div
+                    className="pointer-events-none absolute right-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
+                    style={{ background: arOverlay.color, opacity: 0.85 }}
+                  />
+                </>
+              )}
+
+              {/* Overlay HUD label */}
+              <div className="pointer-events-auto absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
+                <div className="rounded-md border border-accent/40 bg-background/60 px-2 py-1 backdrop-blur">
+                  <div className="flex items-center gap-1 text-[9px] uppercase tracking-widest text-accent">
+                    <Sparkles className="h-3 w-3" /> AR · {arOverlay.kind}
+                  </div>
+                  <div className="text-[11px] text-foreground text-glow-accent">{arOverlay.label}</div>
+                  {arOverlay.sub && (
+                    <div className="text-[9px] text-muted-foreground">{arOverlay.sub}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={clearAROverlay}
+                  className="inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-background/60 px-2 py-1 text-[9px] uppercase tracking-widest text-destructive backdrop-blur transition hover:bg-destructive/15"
+                >
+                  <X className="h-3 w-3" /> Clear
+                </button>
+              </div>
+            </>
+          )}
+
           {/* Status badge */}
           <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-primary/40 bg-background/50 px-2.5 py-1 text-[9px] uppercase tracking-widest backdrop-blur">
             <span
