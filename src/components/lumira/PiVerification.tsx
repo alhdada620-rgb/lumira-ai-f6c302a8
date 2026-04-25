@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
+import { z } from "zod";
 
 const EXPECTED_KEY =
   "f51bf3dbe299a0b14c34f9600f4da97c80967509828e08f6cb9358c4e6f2c5dd71917a163a4cb882482fa0afb195abd842775e25c5ed5bcbef3a9bf92bf9c81c";
@@ -8,16 +9,52 @@ const DOMAIN_STORAGE_KEY = "lumira:pi-verification-domain";
 
 type Status = "idle" | "checking" | "ok" | "mismatch" | "error";
 
+const HOSTNAME_RE =
+  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+
+const domainSchema = z
+  .string()
+  .trim()
+  .max(2048, { message: "URL is too long (max 2048 characters)" })
+  .refine((v) => !/\s/.test(v), { message: "URL cannot contain spaces" })
+  .refine(
+    (v) => {
+      if (!v) return true;
+      const stripped = v.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      return stripped.length > 0;
+    },
+    { message: "Missing hostname after protocol" },
+  )
+  .refine(
+    (v) => {
+      if (!v) return true;
+      let candidate = v;
+      if (!/^https?:\/\//i.test(candidate)) candidate = `https://${candidate}`;
+      try {
+        const u = new URL(candidate);
+        if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+        if (!u.hostname || u.hostname === "localhost") return false;
+        return HOSTNAME_RE.test(u.hostname);
+      } catch {
+        return false;
+      }
+    },
+    { message: "Enter a valid domain like https://your-site.com" },
+  );
+
+function validateDomain(value: string): string | null {
+  const result = domainSchema.safeParse(value);
+  if (result.success) return null;
+  return result.error.issues[0]?.message ?? "Invalid URL";
+}
+
 function buildTargetUrl(domain: string): string {
   const trimmed = domain.trim();
   if (!trimmed) return "/validation-key.txt";
-  // Strip trailing slashes
   let base = trimmed.replace(/\/+$/, "");
-  // Add protocol if missing
   if (!/^https?:\/\//i.test(base)) {
     base = `https://${base}`;
   }
-  // Remove trailing /validation-key.txt if user already typed it
   base = base.replace(/\/validation-key\.txt$/i, "");
   return `${base}/validation-key.txt`;
 }
@@ -25,14 +62,29 @@ function buildTargetUrl(domain: string): string {
 export function PiVerification() {
   const [mounted, setMounted] = useState(false);
   const [domain, setDomain] = useState<string>("");
+  const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [httpCode, setHttpCode] = useState<number | null>(null);
   const [detail, setDetail] = useState<string>("");
   const [lastCheckedAt, setLastCheckedAt] = useState<string>("");
   const [lastUrl, setLastUrl] = useState<string>("");
 
+  const validationError = useMemo(() => validateDomain(domain), [domain]);
+  const showError = touched && !!validationError;
+
   const runCheck = async (overrideDomain?: string) => {
     const useDomain = overrideDomain ?? domain;
+    // Block invalid input — empty is allowed (falls back to relative path)
+    const err = validateDomain(useDomain);
+    if (err) {
+      setTouched(true);
+      setStatus("error");
+      setHttpCode(null);
+      setDetail(err);
+      setLastUrl("");
+      setLastCheckedAt(new Date().toLocaleTimeString());
+      return;
+    }
     const url = buildTargetUrl(useDomain);
     setLastUrl(url);
     setStatus("checking");
@@ -82,6 +134,11 @@ export function PiVerification() {
   }, []);
 
   const handleSaveAndCheck = () => {
+    setTouched(true);
+    if (validateDomain(domain)) {
+      runCheck();
+      return;
+    }
     try {
       if (domain.trim()) {
         localStorage.setItem(DOMAIN_STORAGE_KEY, domain.trim());
@@ -96,6 +153,7 @@ export function PiVerification() {
 
   const handleClearDomain = () => {
     setDomain("");
+    setTouched(false);
     try {
       localStorage.removeItem(DOMAIN_STORAGE_KEY);
     } catch {
@@ -103,6 +161,7 @@ export function PiVerification() {
     }
     runCheck("");
   };
+
 
   if (!mounted) return null;
 
@@ -154,37 +213,56 @@ export function PiVerification() {
         )}
       </div>
 
-      <div className="flex w-full flex-col gap-2 rounded-2xl border border-primary/20 bg-card/40 p-3 backdrop-blur sm:flex-row sm:items-center">
-        <input
-          type="url"
-          inputMode="url"
-          placeholder="https://your-domain.com (leave blank for current site)"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSaveAndCheck();
-          }}
-          className="flex-1 rounded-full border border-primary/20 bg-background/40 px-4 py-2 text-xs tracking-wider text-foreground placeholder:text-muted-foreground/50 focus:border-primary/60 focus:outline-none"
-        />
-        <button
-          type="button"
-          onClick={handleSaveAndCheck}
-          disabled={status === "checking"}
-          className="inline-flex items-center justify-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-primary transition hover:bg-primary/20 disabled:opacity-50"
-        >
-          <RefreshCw
-            className={`h-3 w-3 ${status === "checking" ? "animate-spin" : ""}`}
+      <div className="flex w-full flex-col gap-2 rounded-2xl border border-primary/20 bg-card/40 p-3 backdrop-blur">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="url"
+            inputMode="url"
+            placeholder="https://your-domain.com (leave blank for current site)"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            onBlur={() => setTouched(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSaveAndCheck();
+            }}
+            aria-invalid={showError}
+            aria-describedby={showError ? "pi-domain-error" : undefined}
+            className={`flex-1 rounded-full border bg-background/40 px-4 py-2 text-xs tracking-wider text-foreground placeholder:text-muted-foreground/50 focus:outline-none ${
+              showError
+                ? "border-destructive/60 focus:border-destructive"
+                : "border-primary/20 focus:border-primary/60"
+            }`}
           />
-          Verify
-        </button>
-        {domain && (
           <button
             type="button"
-            onClick={handleClearDomain}
-            className="rounded-full border border-border/40 px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+            onClick={handleSaveAndCheck}
+            disabled={status === "checking" || showError}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Clear
+            <RefreshCw
+              className={`h-3 w-3 ${status === "checking" ? "animate-spin" : ""}`}
+            />
+            Verify
           </button>
+          {domain && (
+            <button
+              type="button"
+              onClick={handleClearDomain}
+              className="rounded-full border border-border/40 px-3 py-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {showError && (
+          <p
+            id="pi-domain-error"
+            role="alert"
+            className="flex items-center gap-1.5 text-[10px] tracking-wider text-destructive"
+          >
+            <AlertTriangle className="h-3 w-3" />
+            {validationError}
+          </p>
         )}
       </div>
 
