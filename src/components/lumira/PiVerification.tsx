@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle, Wand2 } from "lucide-react";
 import { z } from "zod";
 
 const EXPECTED_KEY =
@@ -58,6 +58,53 @@ function buildTargetUrl(domain: string): string {
   base = base.replace(/\/validation-key\.txt$/i, "");
   return `${base}/validation-key.txt`;
 }
+
+/**
+ * Best-effort normalization for the domain input:
+ * - Trims whitespace and strips internal spaces
+ * - Drops common copy-paste noise (surrounding quotes, trailing punctuation)
+ * - Removes leading "@" and "://" typos
+ * - Adds https:// if no protocol
+ * - Lowercases the protocol + hostname
+ * - Removes trailing slashes and a trailing /validation-key.txt
+ */
+function normalizeDomain(raw: string): string {
+  if (!raw) return "";
+  let v = raw.trim();
+  if (!v) return "";
+  // Strip wrapping quotes/backticks
+  v = v.replace(/^["'`]+|["'`]+$/g, "");
+  // Remove all internal whitespace
+  v = v.replace(/\s+/g, "");
+  // Drop trailing punctuation often pasted from sentences
+  v = v.replace(/[.,;:!?]+$/g, "");
+  // Fix "@host.com" → "host.com"
+  v = v.replace(/^@+/, "");
+  // Fix accidental "://host" without scheme
+  v = v.replace(/^:\/+/, "");
+  // Collapse "https:/host" → "https://host"
+  v = v.replace(/^(https?):\/(?!\/)/i, "$1://");
+  // Add https:// if missing
+  if (!/^https?:\/\//i.test(v)) {
+    v = `https://${v}`;
+  }
+  try {
+    const u = new URL(v);
+    u.protocol = u.protocol.toLowerCase();
+    const host = u.hostname.toLowerCase();
+    // Rebuild to drop path/search/hash and trailing slashes
+    let out = `${u.protocol}//${host}`;
+    if (u.port) out += `:${u.port}`;
+    return out;
+  } catch {
+    // Fallback: collapse multiple slashes after scheme, strip trailing /
+    return v
+      .replace(/^(https?:\/\/)\/+/i, "$1")
+      .replace(/\/validation-key\.txt$/i, "")
+      .replace(/\/+$/, "");
+  }
+}
+
 
 export function PiVerification() {
   const [mounted, setMounted] = useState(false);
@@ -162,6 +209,18 @@ export function PiVerification() {
     runCheck("");
   };
 
+  const handleAutoFix = () => {
+    const fixed = normalizeDomain(domain);
+    setDomain(fixed);
+    setTouched(true);
+  };
+
+  const normalizedPreview = useMemo(() => normalizeDomain(domain), [domain]);
+  const canAutoFix =
+    !!domain.trim() &&
+    normalizedPreview !== domain &&
+    !validateDomain(normalizedPreview);
+
 
   if (!mounted) return null;
 
@@ -244,6 +303,17 @@ export function PiVerification() {
             />
             Verify
           </button>
+          {canAutoFix && (
+            <button
+              type="button"
+              onClick={handleAutoFix}
+              title={`Normalize to ${normalizedPreview}`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-accent transition hover:bg-accent/20"
+            >
+              <Wand2 className="h-3 w-3" />
+              Auto-fix
+            </button>
+          )}
           {domain && (
             <button
               type="button"
@@ -258,10 +328,16 @@ export function PiVerification() {
           <p
             id="pi-domain-error"
             role="alert"
-            className="flex items-center gap-1.5 text-[10px] tracking-wider text-destructive"
+            className="flex flex-wrap items-center gap-1.5 text-[10px] tracking-wider text-destructive"
           >
             <AlertTriangle className="h-3 w-3" />
             {validationError}
+            {canAutoFix && (
+              <span className="text-muted-foreground/80">
+                · Tap <span className="text-accent">Auto-fix</span> to use{" "}
+                <span className="font-medium text-foreground">{normalizedPreview}</span>
+              </span>
+            )}
           </p>
         )}
       </div>
