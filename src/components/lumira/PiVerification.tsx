@@ -303,6 +303,17 @@ export function PiVerification() {
             />
             Verify
           </button>
+          {canAutoFix && (
+            <button
+              type="button"
+              onClick={handleAutoFix}
+              title={`Normalize to ${normalizedPreview}`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-accent transition hover:bg-accent/20"
+            >
+              <Wand2 className="h-3 w-3" />
+              Auto-fix
+            </button>
+          )}
           {domain && (
             <button
               type="button"
@@ -317,10 +328,16 @@ export function PiVerification() {
           <p
             id="pi-domain-error"
             role="alert"
-            className="flex items-center gap-1.5 text-[10px] tracking-wider text-destructive"
+            className="flex flex-wrap items-center gap-1.5 text-[10px] tracking-wider text-destructive"
           >
             <AlertTriangle className="h-3 w-3" />
             {validationError}
+            {canAutoFix && (
+              <span className="text-muted-foreground/80">
+                · Tap <span className="text-accent">Auto-fix</span> to use{" "}
+                <span className="font-medium text-foreground">{normalizedPreview}</span>
+              </span>
+            )}
           </p>
         )}
       </div>
