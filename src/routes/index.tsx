@@ -88,6 +88,7 @@ function Index() {
             <div className="text-[9px] tracking-[0.3em] text-muted-foreground/60">
               © {new Date().getFullYear()} · LUMIRA SMART MIRROR
             </div>
+            <PiVerification />
           </footer>
         </main>
       </CameraProvider>
