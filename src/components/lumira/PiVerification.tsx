@@ -62,14 +62,29 @@ function buildTargetUrl(domain: string): string {
 export function PiVerification() {
   const [mounted, setMounted] = useState(false);
   const [domain, setDomain] = useState<string>("");
+  const [touched, setTouched] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [httpCode, setHttpCode] = useState<number | null>(null);
   const [detail, setDetail] = useState<string>("");
   const [lastCheckedAt, setLastCheckedAt] = useState<string>("");
   const [lastUrl, setLastUrl] = useState<string>("");
 
+  const validationError = useMemo(() => validateDomain(domain), [domain]);
+  const showError = touched && !!validationError;
+
   const runCheck = async (overrideDomain?: string) => {
     const useDomain = overrideDomain ?? domain;
+    // Block invalid input — empty is allowed (falls back to relative path)
+    const err = validateDomain(useDomain);
+    if (err) {
+      setTouched(true);
+      setStatus("error");
+      setHttpCode(null);
+      setDetail(err);
+      setLastUrl("");
+      setLastCheckedAt(new Date().toLocaleTimeString());
+      return;
+    }
     const url = buildTargetUrl(useDomain);
     setLastUrl(url);
     setStatus("checking");
@@ -119,6 +134,11 @@ export function PiVerification() {
   }, []);
 
   const handleSaveAndCheck = () => {
+    setTouched(true);
+    if (validateDomain(domain)) {
+      runCheck();
+      return;
+    }
     try {
       if (domain.trim()) {
         localStorage.setItem(DOMAIN_STORAGE_KEY, domain.trim());
@@ -133,6 +153,7 @@ export function PiVerification() {
 
   const handleClearDomain = () => {
     setDomain("");
+    setTouched(false);
     try {
       localStorage.removeItem(DOMAIN_STORAGE_KEY);
     } catch {
@@ -140,6 +161,7 @@ export function PiVerification() {
     }
     runCheck("");
   };
+
 
   if (!mounted) return null;
 
