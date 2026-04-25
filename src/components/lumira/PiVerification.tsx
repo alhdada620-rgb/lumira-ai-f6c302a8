@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
+import { z } from "zod";
 
 const EXPECTED_KEY =
   "f51bf3dbe299a0b14c34f9600f4da97c80967509828e08f6cb9358c4e6f2c5dd71917a163a4cb882482fa0afb195abd842775e25c5ed5bcbef3a9bf92bf9c81c";
@@ -8,16 +9,52 @@ const DOMAIN_STORAGE_KEY = "lumira:pi-verification-domain";
 
 type Status = "idle" | "checking" | "ok" | "mismatch" | "error";
 
+const HOSTNAME_RE =
+  /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+
+const domainSchema = z
+  .string()
+  .trim()
+  .max(2048, { message: "URL is too long (max 2048 characters)" })
+  .refine((v) => !/\s/.test(v), { message: "URL cannot contain spaces" })
+  .refine(
+    (v) => {
+      if (!v) return true;
+      const stripped = v.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+      return stripped.length > 0;
+    },
+    { message: "Missing hostname after protocol" },
+  )
+  .refine(
+    (v) => {
+      if (!v) return true;
+      let candidate = v;
+      if (!/^https?:\/\//i.test(candidate)) candidate = `https://${candidate}`;
+      try {
+        const u = new URL(candidate);
+        if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+        if (!u.hostname || u.hostname === "localhost") return false;
+        return HOSTNAME_RE.test(u.hostname);
+      } catch {
+        return false;
+      }
+    },
+    { message: "Enter a valid domain like https://your-site.com" },
+  );
+
+function validateDomain(value: string): string | null {
+  const result = domainSchema.safeParse(value);
+  if (result.success) return null;
+  return result.error.issues[0]?.message ?? "Invalid URL";
+}
+
 function buildTargetUrl(domain: string): string {
   const trimmed = domain.trim();
   if (!trimmed) return "/validation-key.txt";
-  // Strip trailing slashes
   let base = trimmed.replace(/\/+$/, "");
-  // Add protocol if missing
   if (!/^https?:\/\//i.test(base)) {
     base = `https://${base}`;
   }
-  // Remove trailing /validation-key.txt if user already typed it
   base = base.replace(/\/validation-key\.txt$/i, "");
   return `${base}/validation-key.txt`;
 }
