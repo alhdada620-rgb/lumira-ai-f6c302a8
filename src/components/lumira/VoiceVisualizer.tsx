@@ -2,6 +2,7 @@ import { Mic, MicOff, Sparkles, Camera, Wallet, Shirt } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import { emitVoiceCommand, type VoiceCommand } from "./voice-events";
+import { useT } from "./i18n";
 
 // Minimal Web Speech API types (not in lib.dom for all TS configs)
 type SpeechRecognitionResult = { transcript: string };
@@ -22,9 +23,9 @@ interface SpeechRecognitionLike {
 
 type Preset = {
   command: VoiceCommand;
-  label: string;
-  phrase: string;
-  feedback: string;
+  labelKey: string;
+  phraseKey: string;
+  feedbackKey: string;
   icon: typeof Sparkles;
   patterns: RegExp[];
 };
@@ -32,58 +33,63 @@ type Preset = {
 const PRESETS: Preset[] = [
   {
     command: "analyze-skin",
-    label: "Analyze my skin",
-    phrase: "Lumira, analyze my skin",
-    feedback: "Analyzing your skin…",
+    labelKey: "voice.preset.analyzeSkin",
+    phraseKey: "voice.preset.analyzeSkin.phrase",
+    feedbackKey: "voice.preset.analyzeSkin.feedback",
     icon: Sparkles,
     patterns: [
       /lumira[, ]+analy[sz]e my skin/i,
       /analy[sz]e my skin/i,
       /lumira[, ]+skin (analysis|check|scan)/i,
+      /حلل[يى]?[\s,]+بشرت[يى]/,
     ],
   },
   {
     command: "start-mirror",
-    label: "Start mirror",
-    phrase: "Lumira, start the mirror",
-    feedback: "Activating the mirror…",
+    labelKey: "voice.preset.startMirror",
+    phraseKey: "voice.preset.startMirror.phrase",
+    feedbackKey: "voice.preset.startMirror.feedback",
     icon: Camera,
     patterns: [
       /(start|activate|turn on|open)( the)? mirror/i,
       /(start|open)( the)? camera/i,
+      /(شغ[لّ][يى]?|افتح[يى]?)( ال)?(مرآة|كاميرا)/,
     ],
   },
   {
     command: "stop-mirror",
-    label: "Stop mirror",
-    phrase: "Stop the mirror",
-    feedback: "Stopping the mirror…",
+    labelKey: "voice.preset.stopMirror",
+    phraseKey: "voice.preset.stopMirror.phrase",
+    feedbackKey: "voice.preset.stopMirror.feedback",
     icon: Camera,
     patterns: [
       /(stop|close|turn off|deactivate)( the)? mirror/i,
       /(stop|close)( the)? camera/i,
+      /(أوقف[يى]?|اقفل[يى]?)( ال)?(مرآة|كاميرا)/,
     ],
   },
   {
     command: "connect-pi-wallet",
-    label: "Connect Pi wallet",
-    phrase: "Connect Pi wallet",
-    feedback: "Connecting your Pi wallet…",
+    labelKey: "voice.preset.connectPi",
+    phraseKey: "voice.preset.connectPi.phrase",
+    feedbackKey: "voice.preset.connectPi.feedback",
     icon: Wallet,
     patterns: [
       /connect( my)? pi( network)?( wallet)?/i,
       /(open|launch) pi( wallet)?/i,
+      /اربط[يى]?( ال)?محفظة/,
     ],
   },
   {
     command: "next-outfit",
-    label: "Next outfit",
-    phrase: "Show me the next outfit",
-    feedback: "Switching outfit…",
+    labelKey: "voice.preset.nextOutfit",
+    phraseKey: "voice.preset.nextOutfit.phrase",
+    feedbackKey: "voice.preset.nextOutfit.feedback",
     icon: Shirt,
     patterns: [
       /(next|change|switch)( the)? outfit/i,
       /try (on )?(another|next) (look|outfit)/i,
+      /(الإطلالة|إطلالة) التالية/,
     ],
   },
 ];
@@ -97,6 +103,7 @@ function matchPreset(text: string): Preset | null {
 
 export function VoiceVisualizer() {
   const bars = Array.from({ length: 32 });
+  const { t, lang } = useT();
   const [supported, setSupported] = useState<boolean>(true);
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState<string>("");
@@ -107,7 +114,7 @@ export function VoiceVisualizer() {
   const wantListeningRef = useRef(false);
 
   const triggerPreset = (preset: Preset, source: "voice" | "tap" = "tap") => {
-    setFeedback(preset.feedback);
+    setFeedback(t(preset.feedbackKey));
     setActivePreset(preset.command);
     emitVoiceCommand(preset.command, source);
     window.setTimeout(() => {
@@ -126,7 +133,7 @@ export function VoiceVisualizer() {
       return;
     }
     const rec = new Ctor();
-    rec.lang = "en-US";
+    rec.lang = lang === "ar" ? "ar-SA" : "en-US";
     rec.continuous = true;
     rec.interimResults = true;
 
@@ -148,7 +155,7 @@ export function VoiceVisualizer() {
 
     rec.onerror = (e) => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setError("Microphone access denied");
+        setError(t("voice.micDenied"));
         wantListeningRef.current = false;
         setListening(false);
       } else if (e.error === "no-speech" || e.error === "aborted") {
@@ -179,7 +186,8 @@ export function VoiceVisualizer() {
         /* noop */
       }
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const toggle = () => {
     const rec = recognitionRef.current;
@@ -201,23 +209,23 @@ export function VoiceVisualizer() {
   };
 
   const statusLabel = !supported
-    ? "Not supported in this browser"
+    ? t("voice.notSupported")
     : error
       ? error
       : listening
-        ? "Listening…"
-        : "Tap mic or a preset";
+        ? t("voice.listening")
+        : t("voice.tapHint");
 
   return (
-    <GlassPanel title="Voice Assistant" icon={<Mic className="h-3.5 w-3.5" />}>
+    <GlassPanel title={t("voice.title")} icon={<Mic className="h-3.5 w-3.5" />}>
       <div className="flex flex-col items-center gap-4">
         <button
           type="button"
           onClick={toggle}
           disabled={!supported}
           className="relative outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          aria-label={listening ? "Stop listening" : "Start listening"}
-          title={listening ? "Stop listening" : "Start listening"}
+          aria-label={listening ? t("voice.stopAria") : t("voice.startAria")}
+          title={listening ? t("voice.stopAria") : t("voice.startAria")}
         >
           {listening && (
             <>
@@ -251,7 +259,7 @@ export function VoiceVisualizer() {
           }`}
         >
           {listening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-          {listening ? "Stop" : "Listen"}
+          {listening ? t("voice.stop") : t("voice.listen")}
         </button>
 
         <div className="flex h-10 w-full items-center justify-center gap-1">
@@ -288,7 +296,7 @@ export function VoiceVisualizer() {
             ) : transcript ? (
               <span className="italic">"{transcript}"</span>
             ) : (
-              <>Say or tap a command below</>
+              <>{t("voice.placeholder")}</>
             )}
           </div>
         </div>
@@ -296,7 +304,7 @@ export function VoiceVisualizer() {
         {/* Preset command chips */}
         <div className="w-full border-t border-primary/10 pt-3">
           <p className="mb-2 text-center text-[9px] uppercase tracking-[0.3em] text-muted-foreground/60">
-            Quick commands
+            {t("voice.quickCommands")}
           </p>
           <div className="flex flex-wrap justify-center gap-1.5">
             {PRESETS.map((p) => {
@@ -307,7 +315,7 @@ export function VoiceVisualizer() {
                   key={p.command}
                   type="button"
                   onClick={() => triggerPreset(p)}
-                  title={`"${p.phrase}"`}
+                  title={`"${t(p.phraseKey)}"`}
                   className={`group inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] transition ${
                     isActive
                       ? "border-accent bg-accent/20 text-accent shadow-[var(--glow-accent)]"
@@ -315,7 +323,7 @@ export function VoiceVisualizer() {
                   }`}
                 >
                   <Icon className="h-3 w-3" />
-                  <span className="tracking-wide">{p.label}</span>
+                  <span className="tracking-wide">{t(p.labelKey)}</span>
                 </button>
               );
             })}
