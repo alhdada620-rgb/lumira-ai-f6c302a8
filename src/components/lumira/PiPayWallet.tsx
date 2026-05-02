@@ -168,8 +168,23 @@ export function PiPayWallet() {
               </span>
               <span className="text-muted-foreground">≈ ${usd} USD</span>
             </div>
+            <div className="mt-3 flex items-center justify-between rounded-md border border-primary/20 bg-background/40 px-2.5 py-1.5">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground">
+                {isAr ? "قيمة GCV-Pi" : "GCV-Pi Value"}
+              </span>
+              <span className="text-[11px] font-medium text-primary text-glow tabular-nums">
+                $314,159
+              </span>
+            </div>
           </div>
         </div>
+
+        {state === "completed" && (
+          <div className="flex items-center gap-2 rounded-md border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] text-emerald-300 animate-fade-in">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {isAr ? "تمت المعاملة بنجاح" : "Transaction Successful"}
+          </div>
+        )}
 
         <button
           onClick={payWithPi}
