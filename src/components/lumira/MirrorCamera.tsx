@@ -22,10 +22,65 @@ export function MirrorCamera() {
   const [arScale, setArScale] = useState(100);
   const [arOffsetX, setArOffsetX] = useState(0);
   const [arOffsetY, setArOffsetY] = useState(0);
+  const [snapEnabled, setSnapEnabled] = useState(true);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+
+  // Per-kind alignment presets (scale + offsetX/Y in % of frame)
+  type Preset = { id: string; labelKey: string; scale: number; x: number; y: number };
+  const presets = useMemo<Record<string, Preset[]>>(() => ({
+    outfit: [
+      { id: "fit-shoulders", labelKey: "mirror.ar.preset.shoulders", scale: 105, x: 0, y: -4 },
+      { id: "fit-torso",     labelKey: "mirror.ar.preset.torso",     scale: 100, x: 0, y: 0 },
+      { id: "fit-hips",      labelKey: "mirror.ar.preset.hips",      scale: 110, x: 0, y: 8 },
+      { id: "fit-full",      labelKey: "mirror.ar.preset.full",      scale: 120, x: 0, y: 0 },
+    ],
+    lipstick: [
+      { id: "lips-center", labelKey: "mirror.ar.preset.lipsCenter", scale: 100, x: 0,  y: 0 },
+      { id: "lips-upper",  labelKey: "mirror.ar.preset.lipsUpper",  scale: 95,  x: 0,  y: -3 },
+      { id: "lips-wide",   labelKey: "mirror.ar.preset.lipsWide",   scale: 115, x: 0,  y: 0 },
+    ],
+    blush: [
+      { id: "cheeks-natural", labelKey: "mirror.ar.preset.cheeksNatural", scale: 100, x: 0, y: 0 },
+      { id: "cheeks-high",    labelKey: "mirror.ar.preset.cheeksHigh",    scale: 95,  x: 0, y: -4 },
+      { id: "cheeks-broad",   labelKey: "mirror.ar.preset.cheeksBroad",   scale: 115, x: 0, y: 2 },
+    ],
+    eyeliner: [
+      { id: "eyes-natural", labelKey: "mirror.ar.preset.eyesNatural", scale: 100, x: 0, y: 0 },
+      { id: "eyes-cat",     labelKey: "mirror.ar.preset.eyesCat",     scale: 110, x: 0, y: -2 },
+      { id: "eyes-soft",    labelKey: "mirror.ar.preset.eyesSoft",    scale: 95,  x: 0, y: 1 },
+    ],
+  }), []);
+
+  const currentPresets = arOverlay ? presets[arOverlay.kind] ?? [] : [];
+
+  // Snap configuration: scale to nearest 5%, offsets to nearest 2% with a tight threshold
+  const snap = (val: number, step: number, threshold = 1.25) => {
+    const nearest = Math.round(val / step) * step;
+    return Math.abs(val - nearest) <= threshold ? nearest : val;
+  };
+  const applyScale = (v: number) => {
+    setActivePreset(null);
+    setArScale(snapEnabled ? snap(v, 5) : v);
+  };
+  const applyOffsetX = (v: number) => {
+    setActivePreset(null);
+    setArOffsetX(snapEnabled ? snap(v, 2) : v);
+  };
+  const applyOffsetY = (v: number) => {
+    setActivePreset(null);
+    setArOffsetY(snapEnabled ? snap(v, 2) : v);
+  };
+  const applyPreset = (p: Preset) => {
+    setArScale(p.scale);
+    setArOffsetX(p.x);
+    setArOffsetY(p.y);
+    setActivePreset(p.id);
+  };
   const resetTransform = () => {
     setArScale(100);
     setArOffsetX(0);
     setArOffsetY(0);
+    setActivePreset(null);
   };
   // Reset transform when overlay identity changes
   const overlayKey = arOverlay ? `${arOverlay.kind}:${arOverlay.id}` : null;
@@ -33,6 +88,7 @@ export function MirrorCamera() {
     setArScale(100);
     setArOffsetX(0);
     setArOffsetY(0);
+    setActivePreset(null);
   }, [overlayKey]);
 
   const arTransform = `translate(${arOffsetX}%, ${arOffsetY}%) scale(${arScale / 100})`;
