@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, XCircle, Loader2, ExternalLink, RefreshCw, AlertTriangle, Wand2 } from "lucide-react";
 import { z } from "zod";
+import { useT } from "./i18n";
 
 const EXPECTED_KEY =
   "f51bf3dbe299a0b14c34f9600f4da97c80967509828e08f6cb9358c4e6f2c5dd71917a163a4cb882482fa0afb195abd842775e25c5ed5bcbef3a9bf92bf9c81c";
@@ -107,6 +108,7 @@ function normalizeDomain(raw: string): string {
 
 
 export function PiVerification() {
+  const { t } = useT();
   const [mounted, setMounted] = useState(false);
   const [domain, setDomain] = useState<string>("");
   const [touched, setTouched] = useState(false);
