@@ -26,21 +26,37 @@ interface Row {
   pct: number;
 }
 
+function jitter(base: number, range = 4, min = 0, max = 100) {
+  const v = base + (Math.random() - 0.5) * range * 2;
+  return Math.max(min, Math.min(max, v));
+}
+
 export function HealthSkinAI() {
   const { lang } = useT();
   const isAr = lang === "ar";
   const [bpm, setBpm] = useState(74);
+  const [hydration, setHydration] = useState(82);
+  const [stress, setStress] = useState(30);
+  const [glow, setGlow] = useState(88);
 
   useEffect(() => {
-    const id = setInterval(() => setBpm(70 + Math.floor(Math.random() * 8)), 2000);
+    const id = setInterval(() => {
+      setBpm((b) => Math.round(jitter(b, 3, 62, 92)));
+      setHydration((h) => Math.round(jitter(h, 2, 70, 95)));
+      setStress((s) => Math.round(jitter(s, 3, 15, 55)));
+      setGlow((g) => Math.round(jitter(g, 2, 75, 98)));
+    }, 1800);
     return () => clearInterval(id);
   }, []);
 
+  const stressLabel = (n: number) => (n < 35 ? { en: "Low", ar: "منخفض" } : n < 60 ? { en: "Mild", ar: "متوسط" } : { en: "High", ar: "مرتفع" });
+  const sl = stressLabel(stress);
+
   const rows: Row[] = [
-    { icon: Droplet, labelEn: "Skin Hydration", labelAr: "ترطيب البشرة", valueEn: "82%", valueAr: "82%", pct: 82 },
-    { icon: HeartPulse, labelEn: "Heart Rate", labelAr: "معدل النبض", valueEn: `${bpm} BPM`, valueAr: `${bpm} نبضة`, pct: 74 },
-    { icon: Brain, labelEn: "Stress Level", labelAr: "مستوى التوتر", valueEn: "Low", valueAr: "منخفض", pct: 30 },
-    { icon: Sparkles, labelEn: "Skin Glow", labelAr: "إشراق البشرة", valueEn: "Active", valueAr: "نشِط", pct: 88 },
+    { icon: Droplet, labelEn: "Skin Hydration", labelAr: "ترطيب البشرة", valueEn: `${hydration}%`, valueAr: `${hydration}%`, pct: hydration },
+    { icon: HeartPulse, labelEn: "Heart Rate", labelAr: "معدل النبض", valueEn: `${bpm} BPM`, valueAr: `${bpm} نبضة`, pct: Math.min(100, bpm) },
+    { icon: Brain, labelEn: "Stress Level", labelAr: "مستوى التوتر", valueEn: sl.en, valueAr: sl.ar, pct: stress },
+    { icon: Sparkles, labelEn: "Skin Glow", labelAr: "إشراق البشرة", valueEn: `${glow}%`, valueAr: `${glow}%`, pct: glow },
   ];
 
   return (
