@@ -1,5 +1,6 @@
-import { Camera, CameraOff, Loader2, Sparkles, X, RotateCcw, Undo2, Redo2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Camera, CameraOff, Loader2, Sparkles, X, RotateCcw, Undo2, Redo2, Move, Maximize2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Slider } from "@/components/ui/slider";
 import { GlassPanel } from "./GlassPanel";
 import { useCamera } from "./camera-context";
 import { onVoiceCommand, reportCommandResult } from "./voice-events";
@@ -16,6 +17,25 @@ export function MirrorCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
+
+  // AR fine-tune: scale (50%-180%), offset X/Y (-40% .. +40% of frame)
+  const [arScale, setArScale] = useState(100);
+  const [arOffsetX, setArOffsetX] = useState(0);
+  const [arOffsetY, setArOffsetY] = useState(0);
+  const resetTransform = () => {
+    setArScale(100);
+    setArOffsetX(0);
+    setArOffsetY(0);
+  };
+  // Reset transform when overlay identity changes
+  const overlayKey = arOverlay ? `${arOverlay.kind}:${arOverlay.id}` : null;
+  useEffect(() => {
+    setArScale(100);
+    setArOffsetX(0);
+    setArOffsetY(0);
+  }, [overlayKey]);
+
+  const arTransform = `translate(${arOffsetX}%, ${arOffsetY}%) scale(${arScale / 100})`;
 
   // Voice / preset command integration
   useEffect(() => {
@@ -120,43 +140,48 @@ export function MirrorCamera() {
           {/* AR overlay (Smart Catalog placeholder filter) */}
           {arOverlay && active && (
             <>
-              {arOverlay.kind === "outfit" ? (
-                <div
-                  className="pointer-events-none absolute inset-0 transition-opacity"
-                  style={{
-                    background: arOverlay.color,
-                    opacity: 0.42,
-                    mixBlendMode: "overlay",
-                  }}
-                />
-              ) : arOverlay.kind === "lipstick" ? (
-                <div
-                  className="pointer-events-none absolute left-1/2 top-[68%] h-[6%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[6px]"
-                  style={{ background: arOverlay.color, opacity: 0.7, mixBlendMode: "multiply" }}
-                />
-              ) : arOverlay.kind === "blush" ? (
-                <>
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{ transform: arTransform, transformOrigin: "center", transition: "transform 0.15s ease-out" }}
+              >
+                {arOverlay.kind === "outfit" ? (
                   <div
-                    className="pointer-events-none absolute left-[28%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
-                    style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                    className="absolute inset-0 transition-opacity"
+                    style={{
+                      background: arOverlay.color,
+                      opacity: 0.42,
+                      mixBlendMode: "overlay",
+                    }}
                   />
+                ) : arOverlay.kind === "lipstick" ? (
                   <div
-                    className="pointer-events-none absolute left-[72%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
-                    style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                    className="absolute left-1/2 top-[68%] h-[6%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[6px]"
+                    style={{ background: arOverlay.color, opacity: 0.7, mixBlendMode: "multiply" }}
                   />
-                </>
-              ) : (
-                <>
-                  <div
-                    className="pointer-events-none absolute left-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
-                    style={{ background: arOverlay.color, opacity: 0.85 }}
-                  />
-                  <div
-                    className="pointer-events-none absolute right-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
-                    style={{ background: arOverlay.color, opacity: 0.85 }}
-                  />
-                </>
-              )}
+                ) : arOverlay.kind === "blush" ? (
+                  <>
+                    <div
+                      className="absolute left-[28%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
+                      style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                    />
+                    <div
+                      className="absolute left-[72%] top-[58%] h-[14%] w-[18%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[14px]"
+                      style={{ background: arOverlay.color, opacity: 0.55, mixBlendMode: "soft-light" }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="absolute left-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
+                      style={{ background: arOverlay.color, opacity: 0.85 }}
+                    />
+                    <div
+                      className="absolute right-[35%] top-[44%] h-[1.5%] w-[14%] -translate-y-1/2 rounded-full"
+                      style={{ background: arOverlay.color, opacity: 0.85 }}
+                    />
+                  </>
+                )}
+              </div>
 
               {/* Overlay HUD label */}
               <div className="pointer-events-auto absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
@@ -215,6 +240,50 @@ export function MirrorCamera() {
             </button>
           )}
         </div>
+
+        {/* AR fine-tune controls — visible while an overlay is active and camera live */}
+        {arOverlay && active && (
+          <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] text-primary">
+                <Move className="h-3 w-3" /> {t("mirror.ar.fineTune")}
+              </div>
+              <button
+                type="button"
+                onClick={resetTransform}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-card/40 px-2 py-1 text-[9px] uppercase tracking-widest text-primary transition hover:bg-primary/10"
+              >
+                <RotateCcw className="h-3 w-3" /> {t("mirror.ar.recenter")}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><Maximize2 className="h-2.5 w-2.5" /> {t("mirror.ar.scale")}</span>
+                  <span className="text-foreground">{arScale}%</span>
+                </div>
+                <Slider value={[arScale]} min={50} max={180} step={1} onValueChange={(v) => setArScale(v[0] ?? 100)} />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span>{t("mirror.ar.offsetX")}</span>
+                  <span className="text-foreground">{arOffsetX > 0 ? `+${arOffsetX}` : arOffsetX}%</span>
+                </div>
+                <Slider value={[arOffsetX]} min={-40} max={40} step={1} onValueChange={(v) => setArOffsetX(v[0] ?? 0)} />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span>{t("mirror.ar.offsetY")}</span>
+                  <span className="text-foreground">{arOffsetY > 0 ? `+${arOffsetY}` : arOffsetY}%</span>
+                </div>
+                <Slider value={[arOffsetY]} min={-40} max={40} step={1} onValueChange={(v) => setArOffsetY(v[0] ?? 0)} />
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* Persistent AR overlay status + history controls (visible even when camera is off) */}
         {(arOverlay || arHistoryLength > 0) && (
