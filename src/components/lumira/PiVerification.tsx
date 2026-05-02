@@ -279,6 +279,7 @@ export function PiVerification() {
           <input
             type="url"
             inputMode="url"
+            dir="ltr"
             placeholder={t("piverif.placeholder")}
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
