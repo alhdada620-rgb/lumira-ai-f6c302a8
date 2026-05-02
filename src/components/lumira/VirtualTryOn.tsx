@@ -49,39 +49,39 @@ export function VirtualTryOn() {
           const next = (i + 1) % outfits.length;
           reportCommandResult({
             command: cmd, source, status: "success",
-            message: `Now showing ${outfits[next].name}`,
+            message: t("tryon.cmd.nowShowing", { name: outfits[next].name }),
           });
           return next;
         });
       }
     });
-  }, [outfits]);
+  }, [outfits, t]);
 
   // Wardrobe item selection — inject into the carousel and focus it
   useEffect(() => {
     return onTryOnItem((item, source) => {
-      const incoming: OutfitItem = {
+      const incoming: DynamicOutfit = {
         name: item.name,
         color: item.gradient,
         tag: `${item.brand} · ${item.tag}`,
         brand: item.brand,
       };
-      setOutfits((prev) => {
+      setExtras((prev) => {
         const existing = prev.findIndex((o) => o.name === incoming.name);
         if (existing >= 0) {
           setIdx(existing);
           return prev;
         }
-        const next = [incoming, ...prev].slice(0, 8);
+        const next = [incoming, ...prev].slice(0, 5);
         setIdx(0);
         return next;
       });
       reportCommandResult({
         command: "try-on-item", source, status: "success",
-        message: `Trying ${item.brand} · ${item.name}`,
+        message: t("tryon.cmd.trying", { brand: item.brand, name: item.name }),
       });
     });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const v = videoRef.current;
