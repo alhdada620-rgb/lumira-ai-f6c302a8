@@ -95,7 +95,7 @@ export function VirtualTryOn() {
   }, [stream]);
 
   return (
-    <GlassPanel title="Virtual Try-On · AR" icon={<Shirt className="h-3.5 w-3.5" />} accent>
+    <GlassPanel title={t("tryon.title")} icon={<Shirt className="h-3.5 w-3.5" />} accent>
       <div className="space-y-4">
         <div className="relative h-44 overflow-hidden rounded-lg border border-accent/20">
           {/* Live camera feed */}
@@ -132,7 +132,7 @@ export function VirtualTryOn() {
 
           <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-accent/40 bg-background/40 px-2 py-0.5 text-[9px] uppercase tracking-widest text-accent backdrop-blur">
             <span className={`h-1 w-1 rounded-full ${active ? "bg-emerald-400" : "bg-accent"}`} />
-            {active ? "AR · Live" : "AR Preview"}
+            {active ? t("tryon.live") : t("tryon.preview")}
           </div>
 
           <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
@@ -140,7 +140,7 @@ export function VirtualTryOn() {
               <div className="text-[10px] uppercase tracking-widest text-foreground/80">{outfit.tag}</div>
               <div className="text-sm text-foreground text-glow-accent">{outfit.name}</div>
             </div>
-            <div className="text-[10px] text-muted-foreground">Match · 94%</div>
+            <div className="text-[10px] text-muted-foreground">{t("tryon.match")}</div>
           </div>
 
           {!active && (
@@ -149,7 +149,7 @@ export function VirtualTryOn() {
               disabled={starting}
               className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-primary/50 bg-background/60 px-2 py-1 text-[9px] uppercase tracking-widest text-primary backdrop-blur transition hover:bg-primary/10 disabled:opacity-60"
             >
-              <Camera className="h-3 w-3" /> {starting ? "…" : "Live"}
+              <Camera className="h-3 w-3" /> {starting ? t("tryon.starting") : t("tryon.live.btn")}
             </button>
           )}
         </div>
