@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { LanguageProvider, useT } from "@/components/lumira/i18n";
 import { WalletProvider } from "@/components/lumira/wallet-context";
 import { CameraProvider } from "@/components/lumira/camera-context";
