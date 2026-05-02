@@ -241,6 +241,50 @@ export function MirrorCamera() {
           )}
         </div>
 
+        {/* AR fine-tune controls — visible while an overlay is active and camera live */}
+        {arOverlay && active && (
+          <div className="space-y-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5 backdrop-blur">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em] text-primary">
+                <Move className="h-3 w-3" /> {t("mirror.ar.fineTune")}
+              </div>
+              <button
+                type="button"
+                onClick={resetTransform}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-card/40 px-2 py-1 text-[9px] uppercase tracking-widest text-primary transition hover:bg-primary/10"
+              >
+                <RotateCcw className="h-3 w-3" /> {t("mirror.ar.recenter")}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><Maximize2 className="h-2.5 w-2.5" /> {t("mirror.ar.scale")}</span>
+                  <span className="text-foreground">{arScale}%</span>
+                </div>
+                <Slider value={[arScale]} min={50} max={180} step={1} onValueChange={(v) => setArScale(v[0] ?? 100)} />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span>{t("mirror.ar.offsetX")}</span>
+                  <span className="text-foreground">{arOffsetX > 0 ? `+${arOffsetX}` : arOffsetX}%</span>
+                </div>
+                <Slider value={[arOffsetX]} min={-40} max={40} step={1} onValueChange={(v) => setArOffsetX(v[0] ?? 0)} />
+              </label>
+
+              <label className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span>{t("mirror.ar.offsetY")}</span>
+                  <span className="text-foreground">{arOffsetY > 0 ? `+${arOffsetY}` : arOffsetY}%</span>
+                </div>
+                <Slider value={[arOffsetY]} min={-40} max={40} step={1} onValueChange={(v) => setArOffsetY(v[0] ?? 0)} />
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Persistent AR overlay status + history controls (visible even when camera is off) */}
         {(arOverlay || arHistoryLength > 0) && (
           <div className="flex flex-col gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
