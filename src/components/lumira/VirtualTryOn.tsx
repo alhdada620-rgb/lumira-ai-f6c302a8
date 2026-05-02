@@ -1,26 +1,43 @@
 import { Shirt, ChevronLeft, ChevronRight, Camera } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import { useCamera } from "./camera-context";
 import { onVoiceCommand, onTryOnItem, reportCommandResult } from "./voice-events";
+import { useT } from "./i18n";
 
 interface OutfitItem {
-  name: string;
+  nameKey: string;
+  tagKey: string;
   color: string;
-  tag: string;
   brand?: string;
 }
 
 const defaultOutfits: OutfitItem[] = [
-  { name: "Aurora Coat", color: "linear-gradient(135deg, oklch(0.6 0.18 280), oklch(0.7 0.2 320))", tag: "Couture" },
-  { name: "Nebula Silk", color: "linear-gradient(135deg, oklch(0.5 0.15 200), oklch(0.65 0.18 180))", tag: "Evening" },
-  { name: "Solstice Knit", color: "linear-gradient(135deg, oklch(0.7 0.15 60), oklch(0.6 0.18 30))", tag: "Casual" },
+  { nameKey: "tryon.outfit.aurora", tagKey: "tryon.outfit.aurora.tag", color: "linear-gradient(135deg, oklch(0.6 0.18 280), oklch(0.7 0.2 320))" },
+  { nameKey: "tryon.outfit.nebula", tagKey: "tryon.outfit.nebula.tag", color: "linear-gradient(135deg, oklch(0.5 0.15 200), oklch(0.65 0.18 180))" },
+  { nameKey: "tryon.outfit.solstice", tagKey: "tryon.outfit.solstice.tag", color: "linear-gradient(135deg, oklch(0.7 0.15 60), oklch(0.6 0.18 30))" },
 ];
 
+interface DynamicOutfit {
+  name: string;
+  tag: string;
+  color: string;
+  brand?: string;
+}
+
 export function VirtualTryOn() {
-  const [outfits, setOutfits] = useState<OutfitItem[]>(defaultOutfits);
+  const { t } = useT();
+  const [presets] = useState<OutfitItem[]>(defaultOutfits);
+  const [extras, setExtras] = useState<DynamicOutfit[]>([]);
+  const outfits = useMemo<DynamicOutfit[]>(
+    () => [
+      ...extras,
+      ...presets.map((p) => ({ name: t(p.nameKey), tag: t(p.tagKey), color: p.color })),
+    ],
+    [extras, presets, t],
+  );
   const [idx, setIdx] = useState(0);
-  const outfit = outfits[idx];
+  const outfit = outfits[Math.min(idx, outfits.length - 1)] ?? outfits[0];
   const { stream, active, start, starting } = useCamera();
   const videoRef = useRef<HTMLVideoElement>(null);
 
