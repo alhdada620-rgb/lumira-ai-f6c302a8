@@ -208,6 +208,25 @@ export function PiPayWallet() {
           <p className="text-[10px] leading-relaxed text-destructive/90 break-words">{errorMsg}</p>
         )}
 
+        <button
+          onClick={() => {
+            const text = isAr
+              ? "جرّبت إطلالتي الجديدة على Lumira ✨ #LumiraAI"
+              : "Just tried on a new look on Lumira ✨ #LumiraAI";
+            const url = typeof window !== "undefined" ? window.location.href : "";
+            const share = `https://chat.pi/share?text=${encodeURIComponent(text + " " + url)}`;
+            if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+              (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title: "Lumira", text, url }).catch(() => window.open(share, "_blank"));
+            } else {
+              window.open(share, "_blank");
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-background/40 px-5 py-2 text-[10px] uppercase tracking-[0.35em] text-primary transition hover:border-primary/70 hover:shadow-[var(--glow-soft)] active:scale-[0.98]"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          {isAr ? "شارك على Pi Chat" : "Share to Pi Chat"}
+        </button>
+
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           {isAr
             ? "Pi SDK · الوضع الاختباري — Pi.createPayment()"
