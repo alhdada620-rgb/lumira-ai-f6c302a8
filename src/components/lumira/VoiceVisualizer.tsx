@@ -149,6 +149,21 @@ export function VoiceVisualizer() {
       const combined = (finalText || interim).trim();
       if (combined) setTranscript(combined);
       const check = finalText || interim;
+      // Greeting: "Hello Lumira" / "مرحبا لوميرا"
+      if (check && /(hello|hi|hey)[, ]+lumira|مرحب[اًا]?[\s,]+لوميرا|لوميرا[\s,]+مرحب/i.test(check)) {
+        const reply = lang === "ar"
+          ? "أهلاً إسلام، كيف يمكنني مساعدتك في إطلالتك اليوم؟"
+          : "Hello Islam, how can I help you with your style today?";
+        setFeedback(reply);
+        try {
+          const u = new SpeechSynthesisUtterance(reply);
+          u.lang = lang === "ar" ? "ar-SA" : "en-US";
+          window.speechSynthesis?.cancel();
+          window.speechSynthesis?.speak(u);
+        } catch { /* ignore */ }
+        window.setTimeout(() => setFeedback(""), 4000);
+        return;
+      }
       const preset = check ? matchPreset(check) : null;
       if (preset) triggerPreset(preset, "voice");
     };
