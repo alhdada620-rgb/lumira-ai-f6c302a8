@@ -1,4 +1,4 @@
-import { Wallet, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Wallet, Loader2, CheckCircle2, AlertTriangle, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import { useWallet } from "./wallet-context";
@@ -168,8 +168,23 @@ export function PiPayWallet() {
               </span>
               <span className="text-muted-foreground">≈ ${usd} USD</span>
             </div>
+            <div className="mt-3 flex items-center justify-between rounded-md border border-primary/20 bg-background/40 px-2.5 py-1.5">
+              <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground">
+                {isAr ? "قيمة GCV-Pi" : "GCV-Pi Value"}
+              </span>
+              <span className="text-[11px] font-medium text-primary text-glow tabular-nums">
+                $314,159
+              </span>
+            </div>
           </div>
         </div>
+
+        {state === "completed" && (
+          <div className="flex items-center gap-2 rounded-md border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] text-emerald-300 animate-fade-in">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {isAr ? "تمت المعاملة بنجاح" : "Transaction Successful"}
+          </div>
+        )}
 
         <button
           onClick={payWithPi}
@@ -192,6 +207,25 @@ export function PiPayWallet() {
         {errorMsg && (
           <p className="text-[10px] leading-relaxed text-destructive/90 break-words">{errorMsg}</p>
         )}
+
+        <button
+          onClick={() => {
+            const text = isAr
+              ? "جرّبت إطلالتي الجديدة على Lumira ✨ #LumiraAI"
+              : "Just tried on a new look on Lumira ✨ #LumiraAI";
+            const url = typeof window !== "undefined" ? window.location.href : "";
+            const share = `https://chat.pi/share?text=${encodeURIComponent(text + " " + url)}`;
+            if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+              (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title: "Lumira", text, url }).catch(() => window.open(share, "_blank"));
+            } else {
+              window.open(share, "_blank");
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-background/40 px-5 py-2 text-[10px] uppercase tracking-[0.35em] text-primary transition hover:border-primary/70 hover:shadow-[var(--glow-soft)] active:scale-[0.98]"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          {isAr ? "شارك على Pi Chat" : "Share to Pi Chat"}
+        </button>
 
         <p className="text-[10px] leading-relaxed text-muted-foreground">
           {isAr
