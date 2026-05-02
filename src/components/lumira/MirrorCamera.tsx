@@ -18,6 +18,25 @@ export function MirrorCamera() {
   const activeRef = useRef(active);
   activeRef.current = active;
 
+  // AR fine-tune: scale (50%-180%), offset X/Y (-40% .. +40% of frame)
+  const [arScale, setArScale] = useState(100);
+  const [arOffsetX, setArOffsetX] = useState(0);
+  const [arOffsetY, setArOffsetY] = useState(0);
+  const resetTransform = () => {
+    setArScale(100);
+    setArOffsetX(0);
+    setArOffsetY(0);
+  };
+  // Reset transform when overlay identity changes
+  const overlayKey = arOverlay ? `${arOverlay.kind}:${arOverlay.id}` : null;
+  useEffect(() => {
+    setArScale(100);
+    setArOffsetX(0);
+    setArOffsetY(0);
+  }, [overlayKey]);
+
+  const arTransform = `translate(${arOffsetX}%, ${arOffsetY}%) scale(${arScale / 100})`;
+
   // Voice / preset command integration
   useEffect(() => {
     return onVoiceCommand(async (cmd, source) => {
