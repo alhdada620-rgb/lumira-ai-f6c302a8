@@ -10,12 +10,17 @@ import { useProfile } from "./profile-context";
 
 const AMAZON_TAG = "lumiraai-20";
 
+type Category = "top" | "bottom" | "dress" | "accessory" | "lips" | "cheeks" | "eyes";
+
 interface CatalogItem {
   id: string;
   name: string;
   tag: string;
   gradient: string;
   query: string;
+  category: Category;
+  /** Primary fabric color (hex or oklch) used by the SVG garment */
+  color: string;
 }
 
 interface Brand {
