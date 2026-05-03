@@ -46,6 +46,8 @@ export function VirtualTryOn() {
   const skin = useSkin();
   const skinTint = useMemo(() => deriveGarmentTint(skin), [skin]);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [skinTuneEnabled, setSkinTuneEnabled] = useState(true);
+  const skinTuneActive = skinTuneEnabled && !!skin.completedAt;
 
   // Photoreal generation state
   const [generating, setGenerating] = useState(false);
