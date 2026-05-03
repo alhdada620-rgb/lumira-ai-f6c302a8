@@ -6,6 +6,8 @@ import { MiniDashboard } from "@/components/lumira/MiniDashboard";
 import { VoiceVisualizer } from "@/components/lumira/VoiceVisualizer";
 import { CameraProvider } from "@/components/lumira/camera-context";
 import { WalletProvider } from "@/components/lumira/wallet-context";
+import { ProfileProvider } from "@/components/lumira/profile-context";
+import { ProfileData } from "@/components/lumira/ProfileData";
 import { LanguageProvider, useT } from "@/components/lumira/i18n";
 import { LanguageToggle } from "@/components/lumira/LanguageToggle";
 import bgImg from "@/assets/lumira-bg.jpg";
