@@ -46,6 +46,8 @@ export function VirtualTryOn() {
   const skin = useSkin();
   const skinTint = useMemo(() => deriveGarmentTint(skin), [skin]);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [skinTuneEnabled, setSkinTuneEnabled] = useState(true);
+  const skinTuneActive = skinTuneEnabled && !!skin.completedAt;
 
   // Photoreal generation state
   const [generating, setGenerating] = useState(false);
@@ -139,7 +141,7 @@ export function VirtualTryOn() {
       const baseGarment = outfit.brand
         ? `${outfit.brand} ${outfit.name} (${outfit.tag})`
         : `${outfit.name} (${outfit.tag})`;
-      const skinHint = skin.completedAt
+      const skinHint = skinTuneActive
         ? `, color-matched to a skin tone profile (hydration ${skin.hydration}, smoothness ${skin.smoothness}, tone evenness ${skin.tone}) — favor a complementary hue around ${skinTint.hue.toFixed(0)}° in OKLCH for flattering contrast`
         : "";
       const res = await generatePhotorealLook({
@@ -185,7 +187,7 @@ export function VirtualTryOn() {
             style={{ background: outfit.color, opacity: active ? 0.45 : 0.6, mixBlendMode: active ? "overlay" : "normal" }}
           />
           {/* Skin-tone driven color match overlay */}
-          {skinTint.tint && (
+          {skinTint.tint && skinTuneActive && (
             <div
               className="pointer-events-none absolute inset-0 transition-opacity"
               style={{
@@ -218,7 +220,7 @@ export function VirtualTryOn() {
               <div className="text-sm text-foreground text-glow-accent">{outfit.name}</div>
             </div>
             <div className="text-end text-[10px] text-muted-foreground">
-              {skin.completedAt ? (
+              {skinTuneActive ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-background/40 px-2 py-0.5 text-accent backdrop-blur">
                   <span className="h-1 w-1 rounded-full bg-accent shadow-[0_0_6px_var(--accent)]" />
                   {t("tryon.skinTuned") || "Skin-tuned"}
@@ -266,6 +268,40 @@ export function VirtualTryOn() {
             className="flex h-8 w-8 items-center justify-center rounded-full border border-primary/30 bg-card/40 text-primary transition hover:bg-primary/10 hover:shadow-[var(--glow-soft)]"
           >
             <ChevronRight className="h-4 w-4 rtl:-scale-x-100" />
+          </button>
+        </div>
+
+        {/* Skin-tuned color overlay toggle */}
+        <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-card/30 px-3 py-2">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-foreground/85">
+              {t("tryon.skinTune.label") || "Skin-tuned color"}
+            </span>
+            <span className="text-[9px] text-muted-foreground">
+              {!skin.completedAt
+                ? (t("tryon.skinTune.needScan") || "Run a skin scan to enable")
+                : skinTuneEnabled
+                ? (t("tryon.skinTune.on") || "Matching garment to your skin")
+                : (t("tryon.skinTune.off") || "Using original garment color")}
+            </span>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={skinTuneActive}
+            disabled={!skin.completedAt}
+            onClick={() => setSkinTuneEnabled((v) => !v)}
+            className={`relative h-5 w-9 shrink-0 rounded-full border transition-all ${
+              skinTuneActive
+                ? "border-accent/60 bg-accent/30 shadow-[var(--glow-accent)]"
+                : "border-border/40 bg-muted/30"
+            } ${!skin.completedAt ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+          >
+            <span
+              className={`absolute top-0.5 h-4 w-4 rounded-full transition-all ${
+                skinTuneActive ? "start-[18px] bg-accent shadow-[0_0_8px_var(--accent)]" : "start-0.5 bg-muted-foreground"
+              }`}
+            />
           </button>
         </div>
 
