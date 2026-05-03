@@ -180,6 +180,7 @@ export function FashionStage() {
   const [trying, setTrying] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [debugZones, setDebugZones] = useState(false);
+  const [showAnchors, setShowAnchors] = useState(true);
   const [rotated, setRotated] = useState(false);
   const [isolating, setIsolating] = useState(false);
   const [advisorTips, setAdvisorTips] = useState<string[]>([]);
