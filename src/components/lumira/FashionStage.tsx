@@ -628,3 +628,80 @@ function AvatarSilhouette({ gender, skin }: { gender: "male" | "female"; skin: s
     </svg>
   );
 }
+
+function GarmentSVG({ category, color, brand }: { category: Category; color: string; brand: string }) {
+  const gloss = "rgba(255,255,255,0.35)";
+  const shade = "rgba(0,0,0,0.35)";
+  const filter = "drop-shadow(0 4px 14px rgba(0,0,0,0.45))";
+
+  if (category === "lips") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 60)">
+          <path d="M-14,0 Q-7,-8 0,-3 Q7,-8 14,0 Q7,8 0,4 Q-7,8 -14,0 Z" fill={color} />
+          <path d="M-14,0 Q-7,-8 0,-3 Q7,-8 14,0" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.7" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "cheeks") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 55)">
+          <ellipse cx="-15" cy="0" rx="10" ry="6" fill={color} opacity="0.55" />
+          <ellipse cx="15" cy="0" rx="10" ry="6" fill={color} opacity="0.55" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "eyes") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 48)">
+          <path d="M-18,-2 Q-12,-6 -6,-2" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          <path d="M6,-2 Q12,-6 18,-2" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "accessory") {
+    // hijab/scarf draped around head/shoulders
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M30,30 Q50,8 70,30 Q78,55 65,68 L35,68 Q22,55 30,30 Z" fill={color} />
+        <path d="M30,30 Q50,8 70,30" stroke={gloss} strokeWidth="1" fill="none" opacity="0.6" />
+        <path d="M35,68 Q50,76 65,68 L60,90 L40,90 Z" fill={color} opacity="0.85" />
+      </svg>
+    );
+  }
+  if (category === "bottom") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M28,90 L72,90 L70,180 L55,180 L52,120 L48,120 L45,180 L30,180 Z" fill={color} />
+        <path d="M28,90 L72,90 L70,108 L30,108 Z" fill={shade} opacity="0.4" />
+        <path d="M50,108 L50,178" stroke={gloss} strokeWidth="0.6" opacity="0.5" />
+      </svg>
+    );
+  }
+  if (category === "dress") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M35,40 Q50,32 65,40 L70,90 Q78,150 80,180 L20,180 Q22,150 30,90 Z" fill={color} />
+        <path d="M35,40 Q50,32 65,40 L62,55 Q50,50 38,55 Z" fill={gloss} opacity="0.25" />
+        <text x="50" y="115" textAnchor="middle" fontSize="6" fill={gloss} opacity="0.6"
+          style={{ fontFamily: "system-ui", letterSpacing: 2 }}>{brand}</text>
+      </svg>
+    );
+  }
+  // top (default)
+  return (
+    <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+      <path d="M22,42 L40,32 Q50,38 60,32 L78,42 L72,60 L66,55 L66,110 L34,110 L34,55 L28,60 Z" fill={color} />
+      <path d="M40,32 Q50,38 60,32 L58,46 Q50,50 42,46 Z" fill={shade} opacity="0.45" />
+      <path d="M22,42 L28,60 L34,55" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.5" />
+      <path d="M78,42 L72,60 L66,55" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.5" />
+      <text x="50" y="85" textAnchor="middle" fontSize="6" fill={gloss} opacity="0.7"
+        style={{ fontFamily: "system-ui", letterSpacing: 2 }}>{brand}</text>
+    </svg>
+  );
+}
