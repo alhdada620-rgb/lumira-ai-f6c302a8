@@ -288,6 +288,35 @@ export function FashionStage() {
   const amazonUrl = (q: string) =>
     `https://www.amazon.com/s?k=${encodeURIComponent(q)}&tag=${AMAZON_TAG}`;
 
+  // Auto-start the front camera the moment the user lands on the Live mirror tab.
+  useEffect(() => {
+    if (mode === "live" && !active && !starting && !error) {
+      start();
+    }
+  }, [mode, active, starting, error, start]);
+
+  const captureLook = async () => {
+    if (!stageRef.current || capturing) return;
+    setCapturing(true);
+    try {
+      const dataUrl = await toPng(stageRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#0a1220",
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `lumira-look-${Date.now()}.png`;
+      a.click();
+      toast.success(isAr ? "تم حفظ الإطلالة" : "Look captured");
+    } catch (e) {
+      console.error("captureLook", e);
+      toast.error(isAr ? "تعذّر الحفظ" : "Couldn't capture look");
+    } finally {
+      setCapturing(false);
+    }
+  };
+
   const fetchAdvisor = async (outfit: { brand: string; name: string; category: Category; fabric: Fabric }) => {
     setAdvisorLoading(true);
     try {
