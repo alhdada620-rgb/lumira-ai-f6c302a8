@@ -8,6 +8,17 @@ import { useCamera } from "./camera-context";
 import { useT } from "./i18n";
 import { useProfile } from "./profile-context";
 
+import mannequinMale from "@/assets/mannequin-male.png";
+import mannequinFemale from "@/assets/mannequin-female.png";
+import closetBackdrop from "@/assets/closet-backdrop.jpg";
+import amazonLogo from "@/assets/amazon-logo.png";
+import imgHmTee from "@/assets/garments/hm-tee.png";
+import imgNikeHoodie from "@/assets/garments/nike-hoodie.png";
+import imgZaraBlazer from "@/assets/garments/zara-blazer.png";
+import imgNamshiAbaya from "@/assets/garments/namshi-abaya.png";
+import imgAdidasJacket from "@/assets/garments/adidas-jacket.png";
+import imgSephoraLipstick from "@/assets/garments/sephora-lipstick.png";
+
 const AMAZON_TAG = "lumiraai-20";
 
 type Category = "top" | "bottom" | "dress" | "accessory" | "lips" | "cheeks" | "eyes";
@@ -21,6 +32,8 @@ interface CatalogItem {
   category: Category;
   /** Primary fabric color (hex or oklch) used by the SVG garment */
   color: string;
+  /** Hi-res transparent PNG of the garment for AR overlay & catalog */
+  image?: string;
 }
 
 interface Brand {
@@ -36,7 +49,7 @@ const BRANDS: Brand[] = [
     id: "hm", name: "H&M", outfit: "Casual Crew",
     tint: "linear-gradient(135deg, oklch(0.55 0.2 25 / 0.55), oklch(0.4 0.15 25 / 0.4))",
     items: [
-      { id: "hm-1", name: "Oversized Cotton Tee", tag: "Everyday", category: "top", color: "#e8d9b8", query: "h&m oversized cotton tee", gradient: "linear-gradient(135deg, oklch(0.9 0.02 90 / 0.5), oklch(0.78 0.04 80 / 0.4))" },
+      { id: "hm-1", name: "Oversized Cotton Tee", tag: "Everyday", category: "top", color: "#e8d9b8", image: imgHmTee, query: "h&m oversized cotton tee", gradient: "linear-gradient(135deg, oklch(0.9 0.02 90 / 0.5), oklch(0.78 0.04 80 / 0.4))" },
       { id: "hm-2", name: "Relaxed Denim Jacket", tag: "Layering", category: "top", color: "#3a5a82", query: "h&m relaxed denim jacket", gradient: "linear-gradient(135deg, oklch(0.45 0.08 240 / 0.5), oklch(0.6 0.1 230 / 0.45))" },
       { id: "hm-3", name: "Linen Blazer", tag: "Smart Casual", category: "top", color: "#c2a878", query: "h&m linen blazer", gradient: "linear-gradient(135deg, oklch(0.7 0.05 70 / 0.5), oklch(0.55 0.06 60 / 0.4))" },
       { id: "hm-4", name: "Knit Mock-Neck Sweater", tag: "Winter", category: "top", color: "#7a3030", query: "h&m knit mock neck sweater", gradient: "linear-gradient(135deg, oklch(0.5 0.08 25 / 0.5), oklch(0.35 0.1 20 / 0.45))" },
@@ -46,7 +59,7 @@ const BRANDS: Brand[] = [
     id: "nike", name: "NIKE", outfit: "Sporty Tech Fleece",
     tint: "linear-gradient(135deg, oklch(0.5 0.1 230 / 0.55), oklch(0.3 0.05 230 / 0.45))",
     items: [
-      { id: "nike-1", name: "Tech Fleece Hoodie", tag: "Training", category: "top", color: "#1a1f2e", query: "nike tech fleece hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.02 260 / 0.55), oklch(0.4 0.04 260 / 0.45))" },
+      { id: "nike-1", name: "Tech Fleece Hoodie", tag: "Training", category: "top", color: "#1a1f2e", image: imgNikeHoodie, query: "nike tech fleece hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.02 260 / 0.55), oklch(0.4 0.04 260 / 0.45))" },
       { id: "nike-2", name: "Aero Run Vest", tag: "Performance", category: "top", color: "#2ec27e", query: "nike aero run vest", gradient: "linear-gradient(135deg, oklch(0.7 0.2 150 / 0.5), oklch(0.55 0.18 170 / 0.4))" },
       { id: "nike-3", name: "Dri-FIT Tee", tag: "Sport", category: "top", color: "#c0392b", query: "nike dri-fit shirt", gradient: "linear-gradient(135deg, oklch(0.5 0.18 25 / 0.5), oklch(0.4 0.16 20 / 0.4))" },
       { id: "nike-4", name: "Tech Pack Joggers", tag: "Lifestyle", category: "bottom", color: "#0f1420", query: "nike tech pack joggers", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
@@ -56,7 +69,7 @@ const BRANDS: Brand[] = [
     id: "zara", name: "ZARA", outfit: "Minimal Tailoring",
     tint: "linear-gradient(135deg, oklch(0.35 0.04 60 / 0.55), oklch(0.2 0.02 60 / 0.45))",
     items: [
-      { id: "zara-1", name: "Tailored Wool Blazer", tag: "Smart Casual", category: "top", color: "#2a2f3d", query: "zara tailored wool blazer", gradient: "linear-gradient(135deg, oklch(0.3 0.02 260 / 0.55), oklch(0.5 0.04 260 / 0.45))" },
+      { id: "zara-1", name: "Tailored Wool Blazer", tag: "Smart Casual", category: "top", color: "#2a2f3d", image: imgZaraBlazer, query: "zara tailored wool blazer", gradient: "linear-gradient(135deg, oklch(0.3 0.02 260 / 0.55), oklch(0.5 0.04 260 / 0.45))" },
       { id: "zara-2", name: "Satin Slip Dress", tag: "Evening", category: "dress", color: "#a23864", query: "zara satin slip dress", gradient: "linear-gradient(135deg, oklch(0.55 0.12 350 / 0.5), oklch(0.7 0.1 320 / 0.4))" },
       { id: "zara-3", name: "Pleated Wide-Leg Trousers", tag: "Modern", category: "bottom", color: "#5b513e", query: "zara pleated wide leg trousers", gradient: "linear-gradient(135deg, oklch(0.4 0.03 80 / 0.55), oklch(0.25 0.02 80 / 0.45))" },
       { id: "zara-4", name: "Cropped Leather Jacket", tag: "Statement", category: "top", color: "#1a0f0a", query: "zara cropped leather jacket", gradient: "linear-gradient(135deg, oklch(0.18 0.02 30 / 0.55), oklch(0.3 0.04 30 / 0.45))" },
@@ -66,7 +79,7 @@ const BRANDS: Brand[] = [
     id: "namshi", name: "NAMSHI", outfit: "Modern Abaya",
     tint: "linear-gradient(135deg, oklch(0.6 0.18 320 / 0.5), oklch(0.4 0.12 280 / 0.4))",
     items: [
-      { id: "nam-1", name: "Onyx Embroidered Abaya", tag: "Formal", category: "dress", color: "#0d0a1a", query: "namshi embroidered abaya", gradient: "linear-gradient(135deg, oklch(0.2 0.02 280 / 0.55), oklch(0.4 0.05 280 / 0.45))" },
+      { id: "nam-1", name: "Onyx Embroidered Abaya", tag: "Formal", category: "dress", color: "#0d0a1a", image: imgNamshiAbaya, query: "namshi embroidered abaya", gradient: "linear-gradient(135deg, oklch(0.2 0.02 280 / 0.55), oklch(0.4 0.05 280 / 0.45))" },
       { id: "nam-2", name: "Royal Velvet Kaftan", tag: "Occasion", category: "dress", color: "#5e2a82", query: "namshi velvet kaftan", gradient: "linear-gradient(135deg, oklch(0.35 0.15 280 / 0.5), oklch(0.55 0.18 300 / 0.4))" },
       { id: "nam-3", name: "Silk Hijab Set", tag: "Daily", category: "accessory", color: "#d8b4d4", query: "namshi silk hijab", gradient: "linear-gradient(135deg, oklch(0.7 0.08 320 / 0.5), oklch(0.55 0.1 300 / 0.4))" },
       { id: "nam-4", name: "Pearl Detail Jalabiya", tag: "Festive", category: "dress", color: "#ece4cf", query: "namshi pearl jalabiya", gradient: "linear-gradient(135deg, oklch(0.85 0.04 80 / 0.5), oklch(0.7 0.06 60 / 0.4))" },
@@ -76,7 +89,7 @@ const BRANDS: Brand[] = [
     id: "adidas", name: "ADIDAS", outfit: "Track Suit",
     tint: "linear-gradient(135deg, oklch(0.45 0.08 250 / 0.55), oklch(0.25 0.04 250 / 0.45))",
     items: [
-      { id: "adi-1", name: "Originals Track Jacket", tag: "Retro", category: "top", color: "#2c4a82", query: "adidas originals track jacket", gradient: "linear-gradient(135deg, oklch(0.3 0.05 250 / 0.55), oklch(0.5 0.08 250 / 0.45))" },
+      { id: "adi-1", name: "Originals Track Jacket", tag: "Retro", category: "top", color: "#2c4a82", image: imgAdidasJacket, query: "adidas originals track jacket", gradient: "linear-gradient(135deg, oklch(0.3 0.05 250 / 0.55), oklch(0.5 0.08 250 / 0.45))" },
       { id: "adi-2", name: "Tiro Training Pants", tag: "Sport", category: "bottom", color: "#1a1d28", query: "adidas tiro training pants", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
       { id: "adi-3", name: "Ultraboost Tee", tag: "Run", category: "top", color: "#3aa2c4", query: "adidas ultraboost shirt", gradient: "linear-gradient(135deg, oklch(0.7 0.15 200 / 0.5), oklch(0.5 0.18 220 / 0.4))" },
       { id: "adi-4", name: "Three-Stripe Hoodie", tag: "Lifestyle", category: "top", color: "#222530", query: "adidas three stripe hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.03 260 / 0.55), oklch(0.4 0.05 260 / 0.45))" },
@@ -86,7 +99,7 @@ const BRANDS: Brand[] = [
     id: "sephora", name: "SEPHORA", outfit: "Beauty Glow",
     tint: "linear-gradient(135deg, oklch(0.6 0.2 0 / 0.5), oklch(0.4 0.18 350 / 0.4))",
     items: [
-      { id: "sep-1", name: "Velvet Matte Lipstick", tag: "Bestseller", category: "lips", color: "#a8254a", query: "sephora velvet matte lipstick", gradient: "linear-gradient(135deg, oklch(0.55 0.22 25 / 0.5), oklch(0.4 0.18 15 / 0.4))" },
+      { id: "sep-1", name: "Velvet Matte Lipstick", tag: "Bestseller", category: "lips", color: "#a8254a", image: imgSephoraLipstick, query: "sephora velvet matte lipstick", gradient: "linear-gradient(135deg, oklch(0.55 0.22 25 / 0.5), oklch(0.4 0.18 15 / 0.4))" },
       { id: "sep-2", name: "Liquid Glow Highlighter", tag: "New", category: "cheeks", color: "#f0d090", query: "sephora liquid glow highlighter", gradient: "linear-gradient(135deg, oklch(0.85 0.1 80 / 0.5), oklch(0.7 0.12 60 / 0.4))" },
       { id: "sep-3", name: "Precision Eyeliner", tag: "Pro", category: "eyes", color: "#15161e", query: "sephora precision eyeliner", gradient: "linear-gradient(135deg, oklch(0.18 0.02 260 / 0.55), oklch(0.3 0.04 260 / 0.45))" },
       { id: "sep-4", name: "Cloud Blush", tag: "Sheer", category: "cheeks", color: "#e69aa2", query: "sephora cloud blush", gradient: "linear-gradient(135deg, oklch(0.78 0.12 15 / 0.5), oklch(0.65 0.14 10 / 0.4))" },
@@ -107,7 +120,7 @@ export function FashionStage() {
   const [mode, setMode] = useState<Mode>("live");
   const [activeBrandIdx, setActiveBrandIdx] = useState(0);
   const [openMall, setOpenMall] = useState<Brand | null>(null);
-  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string } | null>(null);
+  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string; image?: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [trying, setTrying] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -148,13 +161,13 @@ export function FashionStage() {
   };
 
   const tryItem = (b: Brand, item: CatalogItem) => {
-    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color });
+    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image });
     runProgress();
   };
 
   const tryBrandDefault = () => {
     const item = brand.items[0];
-    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color });
+    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image });
     runProgress();
   };
 
@@ -213,9 +226,18 @@ export function FashionStage() {
         </div>
 
         {/* Frame */}
-        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-accent/30 bg-background/40">
-          <div className="pointer-events-none absolute -inset-px rounded-xl shadow-[var(--glow-primary)]" />
-          <div className="absolute inset-0 hud-grid opacity-25" />
+        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-accent/30 bg-background/40">
+          {/* Luxury closet backdrop */}
+          <img
+            src={closetBackdrop}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: "brightness(0.55) saturate(1.15)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/60" />
+          <div className="pointer-events-none absolute -inset-px rounded-2xl shadow-[var(--glow-primary)]" />
+          <div className="absolute inset-0 hud-grid opacity-15" />
 
           {/* LIVE MIRROR */}
           {mode === "live" && (
@@ -290,14 +312,18 @@ export function FashionStage() {
                 {/* Glossy floor reflection */}
                 <div className="absolute inset-x-6 bottom-0 h-12 rounded-[50%] bg-gradient-to-t from-accent/20 to-transparent blur-md" />
 
-                {/* SVG avatar */}
+                {/* Photoreal mannequin */}
                 <div
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-500 ease-out"
                   style={{ width: avatarWidth, height: avatarHeight }}
                 >
-                  <AvatarSilhouette
-                    gender={profile.gender}
-                    skin={profile.skinTone}
+                  <img
+                    src={profile.gender === "female" ? mannequinFemale : mannequinMale}
+                    alt="3D Mannequin"
+                    className="h-full w-full object-contain"
+                    style={{
+                      filter: `drop-shadow(0 24px 30px rgba(0,0,0,0.55)) drop-shadow(0 0 22px var(--primary))`,
+                    }}
                   />
                 </div>
 
@@ -390,20 +416,32 @@ export function FashionStage() {
                 className="pointer-events-none absolute inset-0 transition-opacity duration-700 animate-fade-in"
                 style={{ background: overlay.gradient, mixBlendMode: "overlay", opacity: 0.35 }}
               />
-              {/* Garment shape positioned per target */}
+              {/* Garment image positioned per target */}
               <div
                 key={`gar-${overlay.id}`}
-                className="pointer-events-none absolute inset-0 animate-fade-in"
+                className="pointer-events-none absolute inset-0 flex items-start justify-center animate-fade-in"
                 style={{
-                  // For avatar mode, align garment to the silhouette width/height
-                  padding: mode === "avatar" ? `6% ${(100 - parseFloat(avatarWidth)) / 2}% 2%` : "8% 18% 4%",
+                  paddingTop: mode === "avatar" ? "14%" : "18%",
+                  paddingBottom: mode === "avatar" ? "8%" : "14%",
                 }}
               >
-                <GarmentSVG
-                  category={overlay.category}
-                  color={overlay.color}
-                  brand={overlay.brand}
-                />
+                {overlay.image ? (
+                  <img
+                    src={overlay.image}
+                    alt={overlay.name}
+                    className="h-full w-auto max-w-[80%] object-contain"
+                    style={{
+                      filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 14px var(--accent))",
+                      mixBlendMode: mode === "live" || mode === "photo" ? "multiply" : "normal",
+                    }}
+                  />
+                ) : (
+                  <GarmentSVG
+                    category={overlay.category}
+                    color={overlay.color}
+                    brand={overlay.brand}
+                  />
+                )}
               </div>
               <div
                 key={`of-${overlay.id}`}
@@ -517,13 +555,23 @@ export function FashionStage() {
                   key={item.id}
                   className="group relative overflow-hidden rounded-lg border border-accent/30 bg-card/40 backdrop-blur transition hover:shadow-[var(--glow-soft)]"
                 >
-                  <div className="relative h-28">
+                  <div className="relative h-36 overflow-hidden">
                     <div className="absolute inset-0" style={{ background: item.gradient }} />
-                    <div className="absolute inset-0 hud-grid opacity-30" />
-                    <svg viewBox="0 0 100 120" className="absolute inset-0 mx-auto h-full text-foreground/40">
-                      <circle cx="50" cy="22" r="9" fill="currentColor" opacity="0.4" />
-                      <path d="M30,42 L70,42 L74,92 L60,92 L55,58 L45,58 L40,92 L26,92 Z" fill="currentColor" opacity="0.4" />
-                    </svg>
+                    <div className="absolute inset-0 hud-grid opacity-25" />
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        loading="lazy"
+                        className="absolute inset-0 mx-auto h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+                        style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.5))" }}
+                      />
+                    ) : (
+                      <svg viewBox="0 0 100 120" className="absolute inset-0 mx-auto h-full text-foreground/40">
+                        <circle cx="50" cy="22" r="9" fill="currentColor" opacity="0.4" />
+                        <path d="M30,42 L70,42 L74,92 L60,92 L55,58 L45,58 L40,92 L26,92 Z" fill="currentColor" opacity="0.4" />
+                      </svg>
+                    )}
                   </div>
                   <div className="space-y-1.5 p-2.5">
                     <p className="truncate text-xs text-foreground">{item.name}</p>
@@ -535,15 +583,7 @@ export function FashionStage() {
                       >
                         <Sparkles className="h-3 w-3" /> {isAr ? "جرّب" : "Try On"}
                       </button>
-                      <a
-                        href={amazonUrl(item.query)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-[#FF9900] bg-[#FF9900] px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#131921] transition hover:brightness-110 hover:shadow-[0_0_10px_#FF9900AA]"
-                        title={isAr ? "اشترِ من أمازون" : "Buy on Amazon"}
-                      >
-                        <ShoppingBag className="h-3 w-3" /> {isAr ? "اشترِ من أمازون" : "Buy on Amazon"}
-                      </a>
+                      <AmazonButton href={amazonUrl(item.query)} isAr={isAr} />
                     </div>
                   </div>
                 </article>
@@ -703,5 +743,23 @@ function GarmentSVG({ category, color, brand }: { category: Category; color: str
       <text x="50" y="85" textAnchor="middle" fontSize="6" fill={gloss} opacity="0.7"
         style={{ fontFamily: "system-ui", letterSpacing: 2 }}>{brand}</text>
     </svg>
+  );
+}
+
+function AmazonButton({ href, isAr }: { href: string; isAr: boolean }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={isAr ? "اشترِ من أمازون" : "Buy on Amazon"}
+      className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-md border border-primary/50 bg-white px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#131921] shadow-[0_0_0_1px_var(--primary),0_0_14px_oklch(0.85_0.15_200/0.45)] transition hover:shadow-[0_0_0_1px_var(--primary),0_0_22px_oklch(0.85_0.15_200/0.85)] active:scale-[0.98]"
+    >
+      <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+      <span className="text-[9px] tracking-[0.2em] text-[#131921]/80">
+        {isAr ? "اشترِ على" : "Shop on"}
+      </span>
+      <img src={amazonLogo} alt="Amazon" className="h-3.5 w-auto" loading="lazy" />
+    </a>
   );
 }
