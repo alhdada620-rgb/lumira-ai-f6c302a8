@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { GlassPanel } from "./GlassPanel";
 import {
   Sparkles, Camera, CameraOff, Loader2, X, ShoppingBag,
-  Video, User2, Upload, Image as ImageIcon,
+  Video, User2, Upload, Image as ImageIcon, RotateCw, Wand2, Lightbulb,
 } from "lucide-react";
 import { useCamera } from "./camera-context";
 import { useT } from "./i18n";
 import { useProfile } from "./profile-context";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 import mannequinMale from "@/assets/mannequin-male.png";
 import mannequinFemale from "@/assets/mannequin-female.png";
@@ -23,6 +25,8 @@ const AMAZON_TAG = "lumiraai-20";
 
 type Category = "top" | "bottom" | "dress" | "accessory" | "lips" | "cheeks" | "eyes";
 
+type Fabric = "Cotton" | "Silk" | "Denim" | "Wool" | "Linen" | "Leather" | "Velvet" | "Satin" | "Tech" | "Knit" | "Beauty";
+
 interface CatalogItem {
   id: string;
   name: string;
@@ -34,6 +38,8 @@ interface CatalogItem {
   color: string;
   /** Hi-res transparent PNG of the garment for AR overlay & catalog */
   image?: string;
+  /** Fabric / material — drives texture overlay on the garment */
+  fabric?: Fabric;
 }
 
 interface Brand {
@@ -107,6 +113,33 @@ const BRANDS: Brand[] = [
   },
 ];
 
+// Lookup table — id → fabric/material (for texture badges + AI advisor context)
+const FABRIC_BY_ID: Record<string, Fabric> = {
+  "hm-1": "Cotton", "hm-2": "Denim", "hm-3": "Linen", "hm-4": "Knit",
+  "nike-1": "Tech", "nike-2": "Tech", "nike-3": "Cotton", "nike-4": "Tech",
+  "zara-1": "Wool", "zara-2": "Satin", "zara-3": "Wool", "zara-4": "Leather",
+  "nam-1": "Silk", "nam-2": "Velvet", "nam-3": "Silk", "nam-4": "Satin",
+  "adi-1": "Tech", "adi-2": "Tech", "adi-3": "Cotton", "adi-4": "Knit",
+  "sep-1": "Beauty", "sep-2": "Beauty", "sep-3": "Beauty", "sep-4": "Beauty",
+};
+const fabricOf = (item: { id: string; fabric?: Fabric; category: Category }): Fabric =>
+  item.fabric ?? FABRIC_BY_ID[item.id] ?? (item.category === "lips" || item.category === "eyes" || item.category === "cheeks" ? "Beauty" : "Cotton");
+
+// CSS background patterns per fabric — composited over the garment for realistic texture
+const FABRIC_TEXTURES: Record<Fabric, string> = {
+  Cotton: "repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.06) 0 1px, transparent 1px 4px)",
+  Silk:   "linear-gradient(115deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.25) 55%, rgba(255,255,255,0.05) 80%)",
+  Denim:  "repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 3px), repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px)",
+  Wool:   "radial-gradient(rgba(0,0,0,0.18) 0.5px, transparent 1px) 0 0/3px 3px",
+  Linen:  "repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0 1px, transparent 1px 5px)",
+  Leather:"radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), transparent 60%), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.35), transparent 70%)",
+  Velvet: "radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1.5px) 0 0/4px 4px",
+  Satin:  "linear-gradient(110deg, rgba(255,255,255,0.5), rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.4) 70%)",
+  Tech:   "repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 6px)",
+  Knit:   "radial-gradient(rgba(255,255,255,0.15) 0.5px, transparent 1.5px) 0 0/4px 4px",
+  Beauty: "linear-gradient(135deg, rgba(255,255,255,0.4), rgba(255,255,255,0.05) 60%)",
+};
+
 type Mode = "live" | "avatar" | "photo";
 
 export function FashionStage() {
@@ -120,11 +153,15 @@ export function FashionStage() {
   const [mode, setMode] = useState<Mode>("live");
   const [activeBrandIdx, setActiveBrandIdx] = useState(0);
   const [openMall, setOpenMall] = useState<Brand | null>(null);
-  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string; image?: string } | null>(null);
+  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string; image?: string; fabric: Fabric } | null>(null);
   const [progress, setProgress] = useState(0);
   const [trying, setTrying] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [debugZones, setDebugZones] = useState(false);
+  const [rotated, setRotated] = useState(false);
+  const [isolating, setIsolating] = useState(false);
+  const [advisorTips, setAdvisorTips] = useState<string[]>([]);
+  const [advisorLoading, setAdvisorLoading] = useState(false);
 
   const brand = BRANDS[activeBrandIdx];
 
@@ -162,24 +199,75 @@ export function FashionStage() {
   };
 
   const tryItem = (b: Brand, item: CatalogItem) => {
-    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image });
+    const fabric = fabricOf(item);
+    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image, fabric });
     runProgress();
+    fetchAdvisor({ brand: b.name, name: item.name, category: item.category, fabric });
   };
 
   const tryBrandDefault = () => {
     const item = brand.items[0];
-    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image });
+    const fabric = fabricOf(item);
+    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image, fabric });
     runProgress();
+    fetchAdvisor({ brand: brand.name, name: brand.outfit, category: item.category, fabric });
   };
 
   const amazonUrl = (q: string) =>
     `https://www.amazon.com/s?k=${encodeURIComponent(q)}&tag=${AMAZON_TAG}`;
 
+  const fetchAdvisor = async (outfit: { brand: string; name: string; category: Category; fabric: Fabric }) => {
+    setAdvisorLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("style-advisor", {
+        body: {
+          outfit,
+          profile: {
+            gender: profile.gender, height: profile.height,
+            weight: profile.weight, skinTone: profile.skinTone,
+          },
+          language: isAr ? "ar" : "en",
+        },
+      });
+      if (error) throw error;
+      setAdvisorTips(Array.isArray(data?.tips) ? data.tips : []);
+    } catch (e: any) {
+      console.error("style-advisor", e);
+      setAdvisorTips([]);
+    } finally {
+      setAdvisorLoading(false);
+    }
+  };
+
+  const isolatePhoto = async (dataUrl: string) => {
+    setIsolating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("photo-isolate", {
+        body: { imageUrl: dataUrl },
+      });
+      if (error) throw error;
+      if (data?.imageUrl) {
+        profile.setUploadedPhoto(data.imageUrl);
+        toast.success(isAr ? "تم عزل صورتك بنجاح" : "Background removed");
+      }
+    } catch (e: any) {
+      console.error("photo-isolate", e);
+      toast.error(isAr ? "تعذّر عزل الخلفية" : "Couldn't isolate background");
+    } finally {
+      setIsolating(false);
+    }
+  };
+
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => profile.setUploadedPhoto(reader.result as string);
+    reader.onload = () => {
+      const url = reader.result as string;
+      profile.setUploadedPhoto(url);
+      // Run AI background removal for VTON
+      isolatePhoto(url);
+    };
     reader.readAsDataURL(file);
   };
 
@@ -286,6 +374,37 @@ export function FashionStage() {
           })}
         </div>
 
+        {/* Global Gender Toggle + Rotate (apply across all modes) */}
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-card/30 p-1.5 backdrop-blur">
+          <div className="flex gap-1">
+            {(["male", "female"] as const).map((g) => (
+              <button
+                key={g}
+                onClick={() => profile.setGender(g)}
+                className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
+                  profile.gender === g
+                    ? "bg-accent/20 text-accent shadow-[var(--glow-accent)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {g === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setRotated((v) => !v)}
+            title={isAr ? "تدوير 45°" : "Rotate 45°"}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
+              rotated
+                ? "border-accent/60 bg-accent/15 text-accent shadow-[var(--glow-accent)]"
+                : "border-primary/30 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <RotateCw className="h-3 w-3" />
+            {isAr ? "تدوير" : "Rotate"}
+          </button>
+        </div>
+
         {/* Frame */}
         <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-accent/30 bg-background/40">
           {/* Luxury closet backdrop */}
@@ -351,34 +470,24 @@ export function FashionStage() {
           {/* 3D AVATAR */}
           {mode === "avatar" && (
             <div className="absolute inset-0 flex flex-col">
-              {/* Gender select */}
-              <div className="absolute left-1/2 top-3 z-20 flex -translate-x-1/2 gap-1 rounded-full border border-primary/30 bg-background/70 p-1 backdrop-blur">
-                {(["male", "female"] as const).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => profile.setGender(g)}
-                    className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
-                      profile.gender === g
-                        ? "bg-accent/20 text-accent shadow-[var(--glow-accent)]"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {g === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}
-                  </button>
-                ))}
-              </div>
+              {/* gender toggle is now in the global header above the stage */}
 
               {/* Avatar stage */}
               <div className="relative flex-1">
                 {/* Glossy floor reflection */}
                 <div className="absolute inset-x-6 bottom-0 h-12 rounded-[50%] bg-gradient-to-t from-accent/20 to-transparent blur-md" />
 
-                {/* Photoreal mannequin with anatomical body distortion */}
+                {/* Photoreal mannequin with anatomical body distortion + skin-tone tint + 45° rotate */}
                 <div
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-500 ease-out"
-                  style={{ width: avatarWidth, height: avatarHeight }}
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-700 ease-out"
+                  style={{
+                    width: avatarWidth,
+                    height: avatarHeight,
+                    transform: `translateX(-50%) perspective(900px) rotateY(${rotated ? 45 : 0}deg)`,
+                    transformOrigin: "50% 100%",
+                  }}
                 >
-                  {/* Base full body (head + feet stay anchored) */}
+                  {/* Base full body */}
                   <img
                     src={profile.gender === "female" ? mannequinFemale : mannequinMale}
                     alt="3D Mannequin"
@@ -387,7 +496,22 @@ export function FashionStage() {
                       filter: `drop-shadow(0 24px 30px rgba(0,0,0,0.55)) drop-shadow(0 0 22px var(--primary))`,
                     }}
                   />
-                  {/* Midsection bulge layer — wider with weight */}
+                  {/* Skin-tone tint mask (multiplied over mannequin via mask-image) */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 transition-colors duration-500"
+                    style={{
+                      background: profile.skinTone,
+                      mixBlendMode: "multiply",
+                      opacity: 0.55,
+                      WebkitMaskImage: `url(${profile.gender === "female" ? mannequinFemale : mannequinMale})`,
+                      maskImage: `url(${profile.gender === "female" ? mannequinFemale : mannequinMale})`,
+                      WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+                      WebkitMaskPosition: "center", maskPosition: "center",
+                      WebkitMaskSize: "contain", maskSize: "contain",
+                    }}
+                  />
+                  {/* Midsection bulge layer */}
                   <img
                     src={profile.gender === "female" ? mannequinFemale : mannequinMale}
                     alt=""
@@ -545,6 +669,12 @@ export function FashionStage() {
                   {isAr ? "حذف" : "Remove"}
                 </button>
               )}
+              {isolating && (
+                <div className="absolute inset-x-0 bottom-3 mx-auto flex w-fit items-center gap-2 rounded-full border border-accent/40 bg-background/70 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-accent backdrop-blur">
+                  <Wand2 className="h-3 w-3 animate-pulse" />
+                  {isAr ? "عزل الخلفية بالذكاء…" : "AI removing background…"}
+                </div>
+              )}
               <input
                 ref={fileRef}
                 type="file"
@@ -564,14 +694,16 @@ export function FashionStage() {
                 className="pointer-events-none absolute inset-0 transition-opacity duration-700 animate-fade-in"
                 style={{ background: overlay.gradient, mixBlendMode: "overlay", opacity: 0.35 }}
               />
-              {/* Garment image — calibrated per category & target */}
+              {/* Garment image — calibrated per category & target, with VTON wrap (fold/shadow) */}
               <div
                 key={`gar-${overlay.id}`}
-                className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center justify-center animate-fade-in transition-all duration-500 ease-out"
+                className="pointer-events-none absolute left-1/2 flex items-center justify-center animate-fade-in transition-all duration-500 ease-out"
                 style={{
                   top: `${fit.top}%`,
                   bottom: `${fit.bottom}%`,
                   width: `${fit.width}%`,
+                  transform: `translateX(-50%) perspective(900px) rotateY(${rotated && mode === "avatar" ? 45 : 0}deg)`,
+                  transformOrigin: "50% 100%",
                 }}
               >
                 {overlay.image ? (
@@ -583,6 +715,36 @@ export function FashionStage() {
                       style={{
                         filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.55)) drop-shadow(0 0 14px var(--accent))",
                         mixBlendMode: mode === "live" || mode === "photo" ? "multiply" : "normal",
+                      }}
+                    />
+                    {/* Fabric texture overlay — masked to garment shape for realistic weave */}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 transition-opacity duration-500"
+                      style={{
+                        background: FABRIC_TEXTURES[overlay.fabric],
+                        mixBlendMode: "overlay",
+                        opacity: 0.55,
+                        WebkitMaskImage: `url(${overlay.image})`,
+                        maskImage: `url(${overlay.image})`,
+                        WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+                        WebkitMaskPosition: "center", maskPosition: "center",
+                        WebkitMaskSize: "contain", maskSize: "contain",
+                      }}
+                    />
+                    {/* Fold / wrinkle shading — diagonal soft shadows wrap on body */}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(100deg, rgba(0,0,0,0.30) 0%, transparent 18%, rgba(255,255,255,0.18) 38%, transparent 60%, rgba(0,0,0,0.28) 92%)",
+                        mixBlendMode: "soft-light",
+                        WebkitMaskImage: `url(${overlay.image})`,
+                        maskImage: `url(${overlay.image})`,
+                        WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+                        WebkitMaskPosition: "center", maskPosition: "center",
+                        WebkitMaskSize: "contain", maskSize: "contain",
                       }}
                     />
                     {trying && (
@@ -609,6 +771,9 @@ export function FashionStage() {
                 className="absolute bottom-12 left-1/2 -translate-x-1/2 rounded-full border border-accent/50 bg-background/70 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-accent backdrop-blur animate-fade-in shadow-[var(--glow-accent)]"
               >
                 {overlay.brand} · {overlay.name}
+                <span className="ms-2 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[8px] tracking-[0.2em] text-primary">
+                  {overlay.fabric}
+                </span>
               </div>
             </>
           )}
@@ -658,6 +823,42 @@ export function FashionStage() {
             </button>
           )}
         </div>
+
+        {/* AI Style Advisor */}
+        {(overlay || advisorLoading || advisorTips.length > 0) && (
+          <div className="rounded-xl border border-accent/30 bg-gradient-to-br from-accent/10 via-card/40 to-primary/10 p-3 backdrop-blur shadow-[var(--glow-accent)]">
+            <div className="mb-2 flex items-center gap-2">
+              <Lightbulb className="h-3.5 w-3.5 text-accent" />
+              <h4 className="text-[10px] font-medium uppercase tracking-[0.3em] text-accent text-glow-accent">
+                {isAr ? "مستشار الأناقة" : "Style Advisor"}
+              </h4>
+              {overlay && (
+                <span className="ms-auto rounded-full border border-primary/30 bg-background/40 px-2 py-0.5 text-[8px] uppercase tracking-widest text-muted-foreground">
+                  {overlay.fabric}
+                </span>
+              )}
+            </div>
+            {advisorLoading ? (
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {isAr ? "يحلل الذكاء…" : "AI analysing your look…"}
+              </div>
+            ) : advisorTips.length > 0 ? (
+              <ul className="space-y-1.5">
+                {advisorTips.map((tip, i) => (
+                  <li key={i} className="flex gap-2 text-[11px] leading-snug text-foreground/90">
+                    <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-accent shadow-[0_0_6px_var(--accent)]" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                {isAr ? "اختر قطعة ليبدأ المستشار" : "Pick an item to get tips"}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Brand carousel */}
         <div className="flex items-center justify-between gap-2 overflow-x-auto rounded-lg border border-primary/20 bg-card/40 p-2">
@@ -733,6 +934,10 @@ export function FashionStage() {
                         <path d="M30,42 L70,42 L74,92 L60,92 L55,58 L45,58 L40,92 L26,92 Z" fill="currentColor" opacity="0.4" />
                       </svg>
                     )}
+                    {/* Fabric badge */}
+                    <span className="absolute end-1.5 top-1.5 rounded-full border border-accent/40 bg-background/70 px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest text-accent backdrop-blur shadow-[var(--glow-accent)]">
+                      {fabricOf(item)}
+                    </span>
                   </div>
                   <div className="space-y-1.5 p-2.5">
                     <p className="truncate text-xs text-foreground">{item.name}</p>
