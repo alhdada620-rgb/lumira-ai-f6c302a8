@@ -107,7 +107,35 @@ export function HealthSkinAI() {
   const [scanPct, setScanPct] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
+  const [scans, setScans] = useState<ScanRecord[]>(() => loadScans());
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    saveScans(scans);
+  }, [scans]);
+
+  const saveScan = () => {
+    const rec: ScanRecord = {
+      id: (typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+      hydration,
+      smoothness,
+      tone,
+      timestamp: Date.now(),
+    };
+    setScans((prev) => [rec, ...prev].slice(0, 50));
+    setSavedId(rec.id);
+    setTimeout(() => setSavedId((id) => (id === rec.id ? null : id)), 1800);
+  };
+
+  const deleteScan = (id: string) => {
+    setScans((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const clearScans = () => setScans([]);
 
   const stopScan = () => {
     if (intervalRef.current) {
