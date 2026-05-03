@@ -114,9 +114,9 @@ const BRANDS: Brand[] = [
     tint: "linear-gradient(135deg, oklch(0.45 0.08 250 / 0.55), oklch(0.25 0.04 250 / 0.45))",
     items: [
       { id: "adi-1", name: "Originals Track Jacket", tag: "Retro", category: "top", color: "#2c4a82", image: imgAdidasJacket, query: "adidas originals track jacket", gradient: "linear-gradient(135deg, oklch(0.3 0.05 250 / 0.55), oklch(0.5 0.08 250 / 0.45))" },
-      { id: "adi-2", name: "Tiro Training Pants", tag: "Sport", category: "bottom", color: "#1a1d28", query: "adidas tiro training pants", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
-      { id: "adi-3", name: "Ultraboost Tee", tag: "Run", category: "top", color: "#3aa2c4", query: "adidas ultraboost shirt", gradient: "linear-gradient(135deg, oklch(0.7 0.15 200 / 0.5), oklch(0.5 0.18 220 / 0.4))" },
-      { id: "adi-4", name: "Three-Stripe Hoodie", tag: "Lifestyle", category: "top", color: "#222530", query: "adidas three stripe hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.03 260 / 0.55), oklch(0.4 0.05 260 / 0.45))" },
+      { id: "adi-2", name: "Tiro Training Pants", tag: "Sport", category: "bottom", color: "#1a1d28", image: imgAdidasPants, query: "adidas tiro training pants", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
+      { id: "adi-3", name: "Ultraboost Tee", tag: "Run", category: "top", color: "#3aa2c4", image: imgAdidasTee, query: "adidas ultraboost shirt", gradient: "linear-gradient(135deg, oklch(0.7 0.15 200 / 0.5), oklch(0.5 0.18 220 / 0.4))" },
+      { id: "adi-4", name: "Three-Stripe Hoodie", tag: "Lifestyle", category: "top", color: "#222530", image: imgAdidasHoodie, query: "adidas three stripe hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.03 260 / 0.55), oklch(0.4 0.05 260 / 0.45))" },
     ],
   },
   {
