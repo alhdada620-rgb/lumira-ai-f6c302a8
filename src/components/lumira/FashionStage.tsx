@@ -194,6 +194,29 @@ export function FashionStage() {
   const [advisorTips, setAdvisorTips] = useState<string[]>([]);
   const [advisorLoading, setAdvisorLoading] = useState(false);
 
+  // Keyboard shortcuts: 1=Clean, 2=Try-on, 3=Debug. Ignored while typing in inputs.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      let preset: "clean" | "tryon" | "debug" | null = null;
+      if (e.key === "1") preset = "clean";
+      else if (e.key === "2") preset = "tryon";
+      else if (e.key === "3") preset = "debug";
+      if (!preset) return;
+      e.preventDefault();
+      if (preset === "clean") { setShowAnchors(false); setDebugZones(false); }
+      else if (preset === "tryon") { setShowAnchors(true); setDebugZones(false); }
+      else { setShowAnchors(true); setDebugZones(true); }
+      try { localStorage.setItem("lumira:hudPreset", preset); } catch { /* ignore */ }
+      toast.message(`HUD: ${preset === "tryon" ? "Try-on" : preset[0].toUpperCase() + preset.slice(1)}`);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   const brand = BRANDS[activeBrandIdx];
 
   useEffect(() => {
@@ -729,9 +752,9 @@ export function FashionStage() {
                   </button>
                   <div className="flex items-center gap-1 rounded-md border border-primary/30 bg-background/70 p-0.5 backdrop-blur" role="group" aria-label="HUD preset">
                     {([
-                      { id: "clean",  label: isAr ? "نظيف"  : "Clean",  apply: () => { setShowAnchors(false); setDebugZones(false); } },
-                      { id: "tryon",  label: isAr ? "تجربة" : "Try-on", apply: () => { setShowAnchors(true);  setDebugZones(false); } },
-                      { id: "debug",  label: isAr ? "تشخيص" : "Debug",  apply: () => { setShowAnchors(true);  setDebugZones(true);  } },
+                      { id: "clean",  key: "1", label: isAr ? "نظيف"  : "Clean",  apply: () => { setShowAnchors(false); setDebugZones(false); } },
+                      { id: "tryon",  key: "2", label: isAr ? "تجربة" : "Try-on", apply: () => { setShowAnchors(true);  setDebugZones(false); } },
+                      { id: "debug",  key: "3", label: isAr ? "تشخيص" : "Debug",  apply: () => { setShowAnchors(true);  setDebugZones(true);  } },
                     ] as const).map((p) => {
                       const isActive =
                         (p.id === "clean" && !showAnchors && !debugZones) ||
@@ -741,13 +764,15 @@ export function FashionStage() {
                         <button
                           key={p.id}
                           onClick={() => { p.apply(); try { localStorage.setItem("lumira:hudPreset", p.id); } catch { /* ignore */ } }}
-                          className={`rounded px-1.5 py-0.5 text-[9px] uppercase tracking-widest transition ${
+                          title={`${p.label} · ${p.key}`}
+                          className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] uppercase tracking-widest transition ${
                             isActive
                               ? "bg-accent/25 text-accent shadow-[var(--glow-accent)]"
                               : "text-muted-foreground hover:text-foreground"
                           }`}
                         >
                           {p.label}
+                          <kbd className="rounded border border-current/40 px-1 text-[8px] opacity-70">{p.key}</kbd>
                         </button>
                       );
                     })}
