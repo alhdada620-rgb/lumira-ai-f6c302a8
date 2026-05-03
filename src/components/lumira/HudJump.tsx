@@ -80,7 +80,7 @@ export function HudJump() {
     }
   }, [open]);
 
-  const results = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return MODULES;
     return MODULES.filter((m) =>
@@ -88,30 +88,72 @@ export function HudJump() {
     );
   }, [q]);
 
+  // Build a flat, unified list of rows (Recent first, then All) with section headers.
+  type Row =
+    | { kind: "header"; id: string; label: string }
+    | { kind: "item"; id: string; module: ModuleEntry; section: "recent" | "all" };
+
+  const rows: Row[] = useMemo(() => {
+    const out: Row[] = [];
+    const showRecent = !q.trim() && recent.length > 0;
+    if (showRecent) {
+      out.push({ kind: "header", id: "h-recent", label: isAr ? "المستخدم مؤخراً" : "Recent" });
+      for (const id of recent) {
+        const m = MODULES.find((x) => x.id === id);
+        if (m) out.push({ kind: "item", id: `recent-${m.id}`, module: m, section: "recent" });
+      }
+      out.push({ kind: "header", id: "h-all", label: isAr ? "جميع الوحدات" : "All modules" });
+    }
+    for (const m of filtered) {
+      out.push({ kind: "item", id: `all-${m.id}`, module: m, section: "all" });
+    }
+    return out;
+  }, [filtered, recent, q, isAr]);
+
+  const selectableIndices = useMemo(
+    () => rows.reduce<number[]>((acc, r, i) => (r.kind === "item" ? (acc.push(i), acc) : acc), []),
+    [rows],
+  );
+
+  const activeRowIndex = selectableIndices[active] ?? -1;
+  const activeRow = activeRowIndex >= 0 ? rows[activeRowIndex] : undefined;
+  const activeItem = activeRow && activeRow.kind === "item" ? activeRow.module : undefined;
+  const totalSelectable = selectableIndices.length;
+
   useEffect(() => { setActive(0); }, [q, open]);
 
   // Scroll active option into view for screen readers / keyboard users
   useEffect(() => {
-    if (!open) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`#hud-jump-opt-${active}`);
+    if (!open || activeRowIndex < 0) return;
+    const el = listRef.current?.querySelector<HTMLElement>(`#hud-jump-opt-${activeRowIndex}`);
     el?.scrollIntoView({ block: "nearest" });
-  }, [active, open, results.length]);
+  }, [activeRowIndex, open]);
 
   const jump = (id: string) => {
+    setRecent((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, RECENT_MAX);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
     setOpen(false);
     setQ("");
     setTimeout(() => highlight(id), 50);
   };
 
+  const clearRecent = () => {
+    setRecent([]);
+    try { localStorage.removeItem(RECENT_KEY); } catch { /* ignore */ }
+  };
+
   const resultsCountMessage = q.trim()
     ? isAr
-      ? `${results.length} نتيجة لـ "${q}"`
-      : `${results.length} ${results.length === 1 ? "result" : "results"} for "${q}"`
+      ? `${filtered.length} نتيجة لـ "${q}"`
+      : `${filtered.length} ${filtered.length === 1 ? "result" : "results"} for "${q}"`
     : isAr
-      ? `${results.length} وحدة متاحة`
-      : `${results.length} modules available`;
+      ? `${MODULES.length} وحدة متاحة${recent.length ? `، ${recent.length} مستخدمة مؤخراً` : ""}`
+      : `${MODULES.length} modules available${recent.length ? `, ${recent.length} recent` : ""}`;
 
-  const activeId = results[active] ? `hud-jump-opt-${active}` : undefined;
+  const activeId = activeRowIndex >= 0 ? `hud-jump-opt-${activeRowIndex}` : undefined;
 
   return (
     <>
