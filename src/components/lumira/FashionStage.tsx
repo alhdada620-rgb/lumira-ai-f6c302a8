@@ -172,6 +172,8 @@ export function FashionStage() {
   const profile = useProfile();
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [capturing, setCapturing] = useState(false);
 
   const [mode, setMode] = useState<Mode>("live");
   const [activeBrandIdx, setActiveBrandIdx] = useState(0);
