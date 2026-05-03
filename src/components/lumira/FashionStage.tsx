@@ -194,6 +194,29 @@ export function FashionStage() {
   const [advisorTips, setAdvisorTips] = useState<string[]>([]);
   const [advisorLoading, setAdvisorLoading] = useState(false);
 
+  // Keyboard shortcuts: 1=Clean, 2=Try-on, 3=Debug. Ignored while typing in inputs.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      let preset: "clean" | "tryon" | "debug" | null = null;
+      if (e.key === "1") preset = "clean";
+      else if (e.key === "2") preset = "tryon";
+      else if (e.key === "3") preset = "debug";
+      if (!preset) return;
+      e.preventDefault();
+      if (preset === "clean") { setShowAnchors(false); setDebugZones(false); }
+      else if (preset === "tryon") { setShowAnchors(true); setDebugZones(false); }
+      else { setShowAnchors(true); setDebugZones(true); }
+      try { localStorage.setItem("lumira:hudPreset", preset); } catch { /* ignore */ }
+      toast.message(`HUD: ${preset === "tryon" ? "Try-on" : preset[0].toUpperCase() + preset.slice(1)}`);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   const brand = BRANDS[activeBrandIdx];
 
   useEffect(() => {
