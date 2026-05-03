@@ -89,6 +89,12 @@ function IndexShell() {
                 {t("header.systemOnline")}
               </span>
             </span>
+            <Link
+              to="/mall"
+              className="inline-flex items-center gap-2 rounded-full border border-accent/50 bg-card/40 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-accent backdrop-blur transition hover:shadow-[var(--glow-accent)]"
+            >
+              {isAr ? "متجر" : "Mall"}
+            </Link>
             <LanguageToggle />
           </div>
         </header>
