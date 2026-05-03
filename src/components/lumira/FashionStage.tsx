@@ -12,6 +12,10 @@ import { toast } from "sonner";
 
 import mannequinMale from "@/assets/mannequin-male.png";
 import mannequinFemale from "@/assets/mannequin-female.png";
+import avatarMaleThin from "@/assets/avatar/avatar_male_thin.png";
+import avatarMaleHeavy from "@/assets/avatar/avatar_male_heavy.png";
+import avatarFemaleThin from "@/assets/avatar/avatar_female_thin.png";
+import avatarFemaleHeavy from "@/assets/avatar/avatar_female_heavy.png";
 import closetBackdrop from "@/assets/closet-backdrop.jpg";
 import amazonLogo from "@/assets/amazon-logo.png";
 import imgHmTee from "@/assets/garments/hm-tee.png";
