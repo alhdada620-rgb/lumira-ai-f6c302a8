@@ -374,6 +374,37 @@ export function FashionStage() {
           })}
         </div>
 
+        {/* Global Gender Toggle + Rotate (apply across all modes) */}
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-card/30 p-1.5 backdrop-blur">
+          <div className="flex gap-1">
+            {(["male", "female"] as const).map((g) => (
+              <button
+                key={g}
+                onClick={() => profile.setGender(g)}
+                className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
+                  profile.gender === g
+                    ? "bg-accent/20 text-accent shadow-[var(--glow-accent)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {g === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setRotated((v) => !v)}
+            title={isAr ? "تدوير 45°" : "Rotate 45°"}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
+              rotated
+                ? "border-accent/60 bg-accent/15 text-accent shadow-[var(--glow-accent)]"
+                : "border-primary/30 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <RotateCw className="h-3 w-3" />
+            {isAr ? "تدوير" : "Rotate"}
+          </button>
+        </div>
+
         {/* Frame */}
         <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-accent/30 bg-background/40">
           {/* Luxury closet backdrop */}
