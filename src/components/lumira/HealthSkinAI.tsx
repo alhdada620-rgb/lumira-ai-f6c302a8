@@ -112,6 +112,15 @@ export function HealthSkinAI() {
   const [showHistory, setShowHistory] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { setSkinProfile, clearSkinProfile } = useSkin();
+
+  // Push the latest completed scan into the shared skin profile so other
+  // modules (e.g. Virtual Try-On) can react to tone/hydration/smoothness.
+  useEffect(() => {
+    if (scanComplete) {
+      setSkinProfile({ hydration, smoothness, tone });
+    }
+  }, [scanComplete, hydration, smoothness, tone, setSkinProfile]);
 
   useEffect(() => {
     saveScans(scans);
