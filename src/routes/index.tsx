@@ -95,6 +95,7 @@ function IndexShell() {
             >
               {isAr ? "متجر" : "Mall"}
             </Link>
+            <HudJump />
             <LanguageToggle />
           </div>
         </header>
@@ -102,21 +103,21 @@ function IndexShell() {
         {/* Three-column hero layout */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           {/* Center stage — first on mobile */}
-          <div className="order-1 lg:order-2 lg:col-span-6">
+          <div id="mod-tryon" className="order-1 lg:order-2 lg:col-span-6 scroll-mt-24">
             <FashionStage />
           </div>
 
           {/* Left column */}
           <div className="order-2 space-y-5 lg:order-1 lg:col-span-3">
-            <HealthSkinAI />
-            <VoiceVisualizer />
+            <div id="mod-skin" className="scroll-mt-24"><HealthSkinAI /></div>
+            <div id="mod-vitals" className="scroll-mt-24"><VoiceVisualizer /></div>
           </div>
 
           {/* Right column — Daily Dashboard moved to top */}
           <div className="order-3 space-y-5 lg:col-span-3">
-            <MiniDashboard />
-            <PiPayWallet />
-            <ProfileData />
+            <div id="mod-daily" className="scroll-mt-24"><MiniDashboard /></div>
+            <div id="mod-wallet" className="scroll-mt-24"><PiPayWallet /></div>
+            <div id="mod-profile" className="scroll-mt-24"><ProfileData /></div>
           </div>
         </div>
 
