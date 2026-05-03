@@ -43,6 +43,7 @@ function IndexShell() {
 
   return (
     <>
+      <CaptionsOverlay />
       {/* Cinematic luxury background */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center animate-bg-zoom"
