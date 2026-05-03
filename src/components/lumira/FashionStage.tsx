@@ -373,17 +373,43 @@ export function FashionStage() {
                 {/* Glossy floor reflection */}
                 <div className="absolute inset-x-6 bottom-0 h-12 rounded-[50%] bg-gradient-to-t from-accent/20 to-transparent blur-md" />
 
-                {/* Photoreal mannequin */}
+                {/* Photoreal mannequin with anatomical body distortion */}
                 <div
                   className="absolute bottom-2 left-1/2 -translate-x-1/2 transition-all duration-500 ease-out"
                   style={{ width: avatarWidth, height: avatarHeight }}
                 >
+                  {/* Base full body (head + feet stay anchored) */}
                   <img
                     src={profile.gender === "female" ? mannequinFemale : mannequinMale}
                     alt="3D Mannequin"
-                    className="h-full w-full object-contain"
+                    className="absolute inset-0 h-full w-full object-contain"
                     style={{
                       filter: `drop-shadow(0 24px 30px rgba(0,0,0,0.55)) drop-shadow(0 0 22px var(--primary))`,
+                    }}
+                  />
+                  {/* Midsection bulge layer — wider with weight */}
+                  <img
+                    src={profile.gender === "female" ? mannequinFemale : mannequinMale}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-0 h-full w-full object-contain transition-transform duration-500 ease-out"
+                    style={{
+                      clipPath: "inset(34% 0 28% 0)",
+                      transform: `scaleX(${midBulge})`,
+                      transformOrigin: "50% 55%",
+                      filter: `drop-shadow(0 0 12px var(--primary))`,
+                    }}
+                  />
+                  {/* Limb thickness layer */}
+                  <img
+                    src={profile.gender === "female" ? mannequinFemale : mannequinMale}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-0 h-full w-full object-contain transition-transform duration-500 ease-out"
+                    style={{
+                      clipPath: "inset(60% 0 2% 0)",
+                      transform: `scaleX(${limbBulge})`,
+                      transformOrigin: "50% 80%",
                     }}
                   />
                 </div>
