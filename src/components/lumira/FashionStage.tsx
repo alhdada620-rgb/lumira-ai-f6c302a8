@@ -384,6 +384,55 @@ export function FashionStage() {
                   />
                 </div>
 
+                {/* Debug overlay: mannequin box + anatomical garment zones */}
+                {debugZones && (
+                  <div className="pointer-events-none absolute inset-0 z-10">
+                    {/* Mannequin bounding box */}
+                    <div
+                      className="absolute left-1/2 -translate-x-1/2 border border-dashed border-accent/80 transition-all duration-500 ease-out"
+                      style={{
+                        bottom: `${mannBottomPct}%`,
+                        height: `${avatarHeightPct}%`,
+                        width: `${avatarWidthPct}%`,
+                        boxShadow: "0 0 12px oklch(0.78 0.18 320 / 0.5) inset",
+                      }}
+                    >
+                      <span className="absolute -top-4 left-0 rounded bg-accent/80 px-1 text-[8px] font-bold uppercase tracking-widest text-background">
+                        Mannequin {avatarWidthPct.toFixed(0)}×{avatarHeightPct.toFixed(0)}%
+                      </span>
+                    </div>
+                    {/* Anatomical zones */}
+                    {(Object.keys(AVATAR_ZONES) as Category[]).map((cat) => {
+                      const z = AVATAR_ZONES[cat];
+                      const top = mannTopPct + z.y0 * avatarHeightPct;
+                      const bottom = 100 - (mannTopPct + z.y1 * avatarHeightPct);
+                      const width = Math.min(98, avatarWidthPct * z.w);
+                      const color = ZONE_COLORS[cat];
+                      return (
+                        <div
+                          key={cat}
+                          className="absolute left-1/2 -translate-x-1/2 transition-all duration-500 ease-out"
+                          style={{
+                            top: `${top}%`,
+                            bottom: `${bottom}%`,
+                            width: `${width}%`,
+                            border: `1px solid ${color}`,
+                            background: `${color}1f`,
+                            boxShadow: `0 0 6px ${color}80`,
+                          }}
+                        >
+                          <span
+                            className="absolute -top-0.5 left-1 text-[8px] font-bold uppercase tracking-wider"
+                            style={{ color, textShadow: "0 0 4px rgba(0,0,0,0.8)" }}
+                          >
+                            {cat}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Pulsating scanning grid */}
                 {scanning && (
                   <div className="pointer-events-none absolute inset-0">
@@ -395,9 +444,21 @@ export function FashionStage() {
                   </div>
                 )}
 
-                {/* Stats badge */}
-                <div className="absolute end-3 top-3 rounded-md border border-primary/30 bg-background/70 px-2 py-1 text-[9px] uppercase tracking-widest text-primary backdrop-blur">
-                  {profile.height}cm · {profile.weight}kg
+                {/* Stats badge + debug toggle */}
+                <div className="absolute end-3 top-3 z-20 flex flex-col items-end gap-1">
+                  <div className="rounded-md border border-primary/30 bg-background/70 px-2 py-1 text-[9px] uppercase tracking-widest text-primary backdrop-blur">
+                    {profile.height}cm · {profile.weight}kg
+                  </div>
+                  <button
+                    onClick={() => setDebugZones((v) => !v)}
+                    className={`rounded-md border px-2 py-1 text-[9px] uppercase tracking-widest backdrop-blur transition ${
+                      debugZones
+                        ? "border-accent/60 bg-accent/20 text-accent shadow-[var(--glow-accent)]"
+                        : "border-primary/30 bg-background/70 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {isAr ? (debugZones ? "إخفاء المناطق" : "إظهار المناطق") : (debugZones ? "Hide Zones" : "Show Zones")}
+                  </button>
                 </div>
               </div>
 
