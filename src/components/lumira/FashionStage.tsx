@@ -304,6 +304,8 @@ export function FashionStage() {
         pixelRatio: 3,
         backgroundColor: "#0a1220",
         quality: 1,
+        filter: (node) =>
+          !(node instanceof HTMLElement && node.dataset.captureIgnore === "true"),
       });
       const a = document.createElement("a");
       a.href = dataUrl;
