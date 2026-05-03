@@ -10,12 +10,17 @@ import { useProfile } from "./profile-context";
 
 const AMAZON_TAG = "lumiraai-20";
 
+type Category = "top" | "bottom" | "dress" | "accessory" | "lips" | "cheeks" | "eyes";
+
 interface CatalogItem {
   id: string;
   name: string;
   tag: string;
   gradient: string;
   query: string;
+  category: Category;
+  /** Primary fabric color (hex or oklch) used by the SVG garment */
+  color: string;
 }
 
 interface Brand {
@@ -31,60 +36,60 @@ const BRANDS: Brand[] = [
     id: "hm", name: "H&M", outfit: "Casual Crew",
     tint: "linear-gradient(135deg, oklch(0.55 0.2 25 / 0.55), oklch(0.4 0.15 25 / 0.4))",
     items: [
-      { id: "hm-1", name: "Oversized Cotton Tee", tag: "Everyday", query: "h&m oversized cotton tee", gradient: "linear-gradient(135deg, oklch(0.9 0.02 90 / 0.5), oklch(0.78 0.04 80 / 0.4))" },
-      { id: "hm-2", name: "Relaxed Denim Jacket", tag: "Layering", query: "h&m relaxed denim jacket", gradient: "linear-gradient(135deg, oklch(0.45 0.08 240 / 0.5), oklch(0.6 0.1 230 / 0.45))" },
-      { id: "hm-3", name: "Linen Blazer", tag: "Smart Casual", query: "h&m linen blazer", gradient: "linear-gradient(135deg, oklch(0.7 0.05 70 / 0.5), oklch(0.55 0.06 60 / 0.4))" },
-      { id: "hm-4", name: "Knit Mock-Neck Sweater", tag: "Winter", query: "h&m knit mock neck sweater", gradient: "linear-gradient(135deg, oklch(0.5 0.08 25 / 0.5), oklch(0.35 0.1 20 / 0.45))" },
+      { id: "hm-1", name: "Oversized Cotton Tee", tag: "Everyday", category: "top", color: "#e8d9b8", query: "h&m oversized cotton tee", gradient: "linear-gradient(135deg, oklch(0.9 0.02 90 / 0.5), oklch(0.78 0.04 80 / 0.4))" },
+      { id: "hm-2", name: "Relaxed Denim Jacket", tag: "Layering", category: "top", color: "#3a5a82", query: "h&m relaxed denim jacket", gradient: "linear-gradient(135deg, oklch(0.45 0.08 240 / 0.5), oklch(0.6 0.1 230 / 0.45))" },
+      { id: "hm-3", name: "Linen Blazer", tag: "Smart Casual", category: "top", color: "#c2a878", query: "h&m linen blazer", gradient: "linear-gradient(135deg, oklch(0.7 0.05 70 / 0.5), oklch(0.55 0.06 60 / 0.4))" },
+      { id: "hm-4", name: "Knit Mock-Neck Sweater", tag: "Winter", category: "top", color: "#7a3030", query: "h&m knit mock neck sweater", gradient: "linear-gradient(135deg, oklch(0.5 0.08 25 / 0.5), oklch(0.35 0.1 20 / 0.45))" },
     ],
   },
   {
     id: "nike", name: "NIKE", outfit: "Sporty Tech Fleece",
     tint: "linear-gradient(135deg, oklch(0.5 0.1 230 / 0.55), oklch(0.3 0.05 230 / 0.45))",
     items: [
-      { id: "nike-1", name: "Tech Fleece Hoodie", tag: "Training", query: "nike tech fleece hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.02 260 / 0.55), oklch(0.4 0.04 260 / 0.45))" },
-      { id: "nike-2", name: "Aero Run Vest", tag: "Performance", query: "nike aero run vest", gradient: "linear-gradient(135deg, oklch(0.7 0.2 150 / 0.5), oklch(0.55 0.18 170 / 0.4))" },
-      { id: "nike-3", name: "Dri-FIT Tee", tag: "Sport", query: "nike dri-fit shirt", gradient: "linear-gradient(135deg, oklch(0.5 0.18 25 / 0.5), oklch(0.4 0.16 20 / 0.4))" },
-      { id: "nike-4", name: "Tech Pack Joggers", tag: "Lifestyle", query: "nike tech pack joggers", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
+      { id: "nike-1", name: "Tech Fleece Hoodie", tag: "Training", category: "top", color: "#1a1f2e", query: "nike tech fleece hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.02 260 / 0.55), oklch(0.4 0.04 260 / 0.45))" },
+      { id: "nike-2", name: "Aero Run Vest", tag: "Performance", category: "top", color: "#2ec27e", query: "nike aero run vest", gradient: "linear-gradient(135deg, oklch(0.7 0.2 150 / 0.5), oklch(0.55 0.18 170 / 0.4))" },
+      { id: "nike-3", name: "Dri-FIT Tee", tag: "Sport", category: "top", color: "#c0392b", query: "nike dri-fit shirt", gradient: "linear-gradient(135deg, oklch(0.5 0.18 25 / 0.5), oklch(0.4 0.16 20 / 0.4))" },
+      { id: "nike-4", name: "Tech Pack Joggers", tag: "Lifestyle", category: "bottom", color: "#0f1420", query: "nike tech pack joggers", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
     ],
   },
   {
     id: "zara", name: "ZARA", outfit: "Minimal Tailoring",
     tint: "linear-gradient(135deg, oklch(0.35 0.04 60 / 0.55), oklch(0.2 0.02 60 / 0.45))",
     items: [
-      { id: "zara-1", name: "Tailored Wool Blazer", tag: "Smart Casual", query: "zara tailored wool blazer", gradient: "linear-gradient(135deg, oklch(0.3 0.02 260 / 0.55), oklch(0.5 0.04 260 / 0.45))" },
-      { id: "zara-2", name: "Satin Slip Dress", tag: "Evening", query: "zara satin slip dress", gradient: "linear-gradient(135deg, oklch(0.55 0.12 350 / 0.5), oklch(0.7 0.1 320 / 0.4))" },
-      { id: "zara-3", name: "Pleated Wide-Leg Trousers", tag: "Modern", query: "zara pleated wide leg trousers", gradient: "linear-gradient(135deg, oklch(0.4 0.03 80 / 0.55), oklch(0.25 0.02 80 / 0.45))" },
-      { id: "zara-4", name: "Cropped Leather Jacket", tag: "Statement", query: "zara cropped leather jacket", gradient: "linear-gradient(135deg, oklch(0.18 0.02 30 / 0.55), oklch(0.3 0.04 30 / 0.45))" },
+      { id: "zara-1", name: "Tailored Wool Blazer", tag: "Smart Casual", category: "top", color: "#2a2f3d", query: "zara tailored wool blazer", gradient: "linear-gradient(135deg, oklch(0.3 0.02 260 / 0.55), oklch(0.5 0.04 260 / 0.45))" },
+      { id: "zara-2", name: "Satin Slip Dress", tag: "Evening", category: "dress", color: "#a23864", query: "zara satin slip dress", gradient: "linear-gradient(135deg, oklch(0.55 0.12 350 / 0.5), oklch(0.7 0.1 320 / 0.4))" },
+      { id: "zara-3", name: "Pleated Wide-Leg Trousers", tag: "Modern", category: "bottom", color: "#5b513e", query: "zara pleated wide leg trousers", gradient: "linear-gradient(135deg, oklch(0.4 0.03 80 / 0.55), oklch(0.25 0.02 80 / 0.45))" },
+      { id: "zara-4", name: "Cropped Leather Jacket", tag: "Statement", category: "top", color: "#1a0f0a", query: "zara cropped leather jacket", gradient: "linear-gradient(135deg, oklch(0.18 0.02 30 / 0.55), oklch(0.3 0.04 30 / 0.45))" },
     ],
   },
   {
     id: "namshi", name: "NAMSHI", outfit: "Modern Abaya",
     tint: "linear-gradient(135deg, oklch(0.6 0.18 320 / 0.5), oklch(0.4 0.12 280 / 0.4))",
     items: [
-      { id: "nam-1", name: "Onyx Embroidered Abaya", tag: "Formal", query: "namshi embroidered abaya", gradient: "linear-gradient(135deg, oklch(0.2 0.02 280 / 0.55), oklch(0.4 0.05 280 / 0.45))" },
-      { id: "nam-2", name: "Royal Velvet Kaftan", tag: "Occasion", query: "namshi velvet kaftan", gradient: "linear-gradient(135deg, oklch(0.35 0.15 280 / 0.5), oklch(0.55 0.18 300 / 0.4))" },
-      { id: "nam-3", name: "Silk Hijab Set", tag: "Daily", query: "namshi silk hijab", gradient: "linear-gradient(135deg, oklch(0.7 0.08 320 / 0.5), oklch(0.55 0.1 300 / 0.4))" },
-      { id: "nam-4", name: "Pearl Detail Jalabiya", tag: "Festive", query: "namshi pearl jalabiya", gradient: "linear-gradient(135deg, oklch(0.85 0.04 80 / 0.5), oklch(0.7 0.06 60 / 0.4))" },
+      { id: "nam-1", name: "Onyx Embroidered Abaya", tag: "Formal", category: "dress", color: "#0d0a1a", query: "namshi embroidered abaya", gradient: "linear-gradient(135deg, oklch(0.2 0.02 280 / 0.55), oklch(0.4 0.05 280 / 0.45))" },
+      { id: "nam-2", name: "Royal Velvet Kaftan", tag: "Occasion", category: "dress", color: "#5e2a82", query: "namshi velvet kaftan", gradient: "linear-gradient(135deg, oklch(0.35 0.15 280 / 0.5), oklch(0.55 0.18 300 / 0.4))" },
+      { id: "nam-3", name: "Silk Hijab Set", tag: "Daily", category: "accessory", color: "#d8b4d4", query: "namshi silk hijab", gradient: "linear-gradient(135deg, oklch(0.7 0.08 320 / 0.5), oklch(0.55 0.1 300 / 0.4))" },
+      { id: "nam-4", name: "Pearl Detail Jalabiya", tag: "Festive", category: "dress", color: "#ece4cf", query: "namshi pearl jalabiya", gradient: "linear-gradient(135deg, oklch(0.85 0.04 80 / 0.5), oklch(0.7 0.06 60 / 0.4))" },
     ],
   },
   {
     id: "adidas", name: "ADIDAS", outfit: "Track Suit",
     tint: "linear-gradient(135deg, oklch(0.45 0.08 250 / 0.55), oklch(0.25 0.04 250 / 0.45))",
     items: [
-      { id: "adi-1", name: "Originals Track Jacket", tag: "Retro", query: "adidas originals track jacket", gradient: "linear-gradient(135deg, oklch(0.3 0.05 250 / 0.55), oklch(0.5 0.08 250 / 0.45))" },
-      { id: "adi-2", name: "Tiro Training Pants", tag: "Sport", query: "adidas tiro training pants", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
-      { id: "adi-3", name: "Ultraboost Tee", tag: "Run", query: "adidas ultraboost shirt", gradient: "linear-gradient(135deg, oklch(0.7 0.15 200 / 0.5), oklch(0.5 0.18 220 / 0.4))" },
-      { id: "adi-4", name: "Three-Stripe Hoodie", tag: "Lifestyle", query: "adidas three stripe hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.03 260 / 0.55), oklch(0.4 0.05 260 / 0.45))" },
+      { id: "adi-1", name: "Originals Track Jacket", tag: "Retro", category: "top", color: "#2c4a82", query: "adidas originals track jacket", gradient: "linear-gradient(135deg, oklch(0.3 0.05 250 / 0.55), oklch(0.5 0.08 250 / 0.45))" },
+      { id: "adi-2", name: "Tiro Training Pants", tag: "Sport", category: "bottom", color: "#1a1d28", query: "adidas tiro training pants", gradient: "linear-gradient(135deg, oklch(0.2 0.02 260 / 0.55), oklch(0.35 0.04 260 / 0.45))" },
+      { id: "adi-3", name: "Ultraboost Tee", tag: "Run", category: "top", color: "#3aa2c4", query: "adidas ultraboost shirt", gradient: "linear-gradient(135deg, oklch(0.7 0.15 200 / 0.5), oklch(0.5 0.18 220 / 0.4))" },
+      { id: "adi-4", name: "Three-Stripe Hoodie", tag: "Lifestyle", category: "top", color: "#222530", query: "adidas three stripe hoodie", gradient: "linear-gradient(135deg, oklch(0.25 0.03 260 / 0.55), oklch(0.4 0.05 260 / 0.45))" },
     ],
   },
   {
     id: "sephora", name: "SEPHORA", outfit: "Beauty Glow",
     tint: "linear-gradient(135deg, oklch(0.6 0.2 0 / 0.5), oklch(0.4 0.18 350 / 0.4))",
     items: [
-      { id: "sep-1", name: "Velvet Matte Lipstick", tag: "Bestseller", query: "sephora velvet matte lipstick", gradient: "linear-gradient(135deg, oklch(0.55 0.22 25 / 0.5), oklch(0.4 0.18 15 / 0.4))" },
-      { id: "sep-2", name: "Liquid Glow Highlighter", tag: "New", query: "sephora liquid glow highlighter", gradient: "linear-gradient(135deg, oklch(0.85 0.1 80 / 0.5), oklch(0.7 0.12 60 / 0.4))" },
-      { id: "sep-3", name: "Precision Eyeliner", tag: "Pro", query: "sephora precision eyeliner", gradient: "linear-gradient(135deg, oklch(0.18 0.02 260 / 0.55), oklch(0.3 0.04 260 / 0.45))" },
-      { id: "sep-4", name: "Cloud Blush", tag: "Sheer", query: "sephora cloud blush", gradient: "linear-gradient(135deg, oklch(0.78 0.12 15 / 0.5), oklch(0.65 0.14 10 / 0.4))" },
+      { id: "sep-1", name: "Velvet Matte Lipstick", tag: "Bestseller", category: "lips", color: "#a8254a", query: "sephora velvet matte lipstick", gradient: "linear-gradient(135deg, oklch(0.55 0.22 25 / 0.5), oklch(0.4 0.18 15 / 0.4))" },
+      { id: "sep-2", name: "Liquid Glow Highlighter", tag: "New", category: "cheeks", color: "#f0d090", query: "sephora liquid glow highlighter", gradient: "linear-gradient(135deg, oklch(0.85 0.1 80 / 0.5), oklch(0.7 0.12 60 / 0.4))" },
+      { id: "sep-3", name: "Precision Eyeliner", tag: "Pro", category: "eyes", color: "#15161e", query: "sephora precision eyeliner", gradient: "linear-gradient(135deg, oklch(0.18 0.02 260 / 0.55), oklch(0.3 0.04 260 / 0.45))" },
+      { id: "sep-4", name: "Cloud Blush", tag: "Sheer", category: "cheeks", color: "#e69aa2", query: "sephora cloud blush", gradient: "linear-gradient(135deg, oklch(0.78 0.12 15 / 0.5), oklch(0.65 0.14 10 / 0.4))" },
     ],
   },
 ];
@@ -102,7 +107,7 @@ export function FashionStage() {
   const [mode, setMode] = useState<Mode>("live");
   const [activeBrandIdx, setActiveBrandIdx] = useState(0);
   const [openMall, setOpenMall] = useState<Brand | null>(null);
-  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string } | null>(null);
+  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [trying, setTrying] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -143,12 +148,13 @@ export function FashionStage() {
   };
 
   const tryItem = (b: Brand, item: CatalogItem) => {
-    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient });
+    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color });
     runProgress();
   };
 
   const tryBrandDefault = () => {
-    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint });
+    const item = brand.items[0];
+    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color });
     runProgress();
   };
 
@@ -375,25 +381,35 @@ export function FashionStage() {
             </>
           )}
 
-          {/* AR overlay */}
+          {/* AR garment overlay */}
           {overlay && (
             <>
+              {/* Subtle scene tint to unify lighting */}
               <div
-                key={overlay.id}
+                key={`tint-${overlay.id}`}
                 className="pointer-events-none absolute inset-0 transition-opacity duration-700 animate-fade-in"
-                style={{ background: overlay.gradient, mixBlendMode: "overlay", opacity: 0.85 }}
+                style={{ background: overlay.gradient, mixBlendMode: "overlay", opacity: 0.35 }}
               />
+              {/* Garment shape positioned per target */}
               <div
-                key={`wm-${overlay.id}`}
-                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-extrabold tracking-[0.15em] text-foreground/85 text-glow-accent drop-shadow-[0_0_12px_rgba(0,0,0,0.6)] animate-fade-in"
+                key={`gar-${overlay.id}`}
+                className="pointer-events-none absolute inset-0 animate-fade-in"
+                style={{
+                  // For avatar mode, align garment to the silhouette width/height
+                  padding: mode === "avatar" ? `6% ${(100 - parseFloat(avatarWidth)) / 2}% 2%` : "8% 18% 4%",
+                }}
               >
-                {overlay.brand}
+                <GarmentSVG
+                  category={overlay.category}
+                  color={overlay.color}
+                  brand={overlay.brand}
+                />
               </div>
               <div
                 key={`of-${overlay.id}`}
                 className="absolute bottom-12 left-1/2 -translate-x-1/2 rounded-full border border-accent/50 bg-background/70 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-accent backdrop-blur animate-fade-in shadow-[var(--glow-accent)]"
               >
-                {overlay.name}
+                {overlay.brand} · {overlay.name}
               </div>
             </>
           )}
@@ -609,6 +625,83 @@ function AvatarSilhouette({ gender, skin }: { gender: "male" | "female"; skin: s
       {/* Arms */}
       <rect x="22" y="40" width="9" height="60" rx="4" fill={`url(#${gradId})`} />
       <rect x="69" y="40" width="9" height="60" rx="4" fill={`url(#${gradId})`} />
+    </svg>
+  );
+}
+
+function GarmentSVG({ category, color, brand }: { category: Category; color: string; brand: string }) {
+  const gloss = "rgba(255,255,255,0.35)";
+  const shade = "rgba(0,0,0,0.35)";
+  const filter = "drop-shadow(0 4px 14px rgba(0,0,0,0.45))";
+
+  if (category === "lips") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 60)">
+          <path d="M-14,0 Q-7,-8 0,-3 Q7,-8 14,0 Q7,8 0,4 Q-7,8 -14,0 Z" fill={color} />
+          <path d="M-14,0 Q-7,-8 0,-3 Q7,-8 14,0" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.7" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "cheeks") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 55)">
+          <ellipse cx="-15" cy="0" rx="10" ry="6" fill={color} opacity="0.55" />
+          <ellipse cx="15" cy="0" rx="10" ry="6" fill={color} opacity="0.55" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "eyes") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <g transform="translate(50 48)">
+          <path d="M-18,-2 Q-12,-6 -6,-2" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          <path d="M6,-2 Q12,-6 18,-2" stroke={color} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </g>
+      </svg>
+    );
+  }
+  if (category === "accessory") {
+    // hijab/scarf draped around head/shoulders
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M30,30 Q50,8 70,30 Q78,55 65,68 L35,68 Q22,55 30,30 Z" fill={color} />
+        <path d="M30,30 Q50,8 70,30" stroke={gloss} strokeWidth="1" fill="none" opacity="0.6" />
+        <path d="M35,68 Q50,76 65,68 L60,90 L40,90 Z" fill={color} opacity="0.85" />
+      </svg>
+    );
+  }
+  if (category === "bottom") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M28,90 L72,90 L70,180 L55,180 L52,120 L48,120 L45,180 L30,180 Z" fill={color} />
+        <path d="M28,90 L72,90 L70,108 L30,108 Z" fill={shade} opacity="0.4" />
+        <path d="M50,108 L50,178" stroke={gloss} strokeWidth="0.6" opacity="0.5" />
+      </svg>
+    );
+  }
+  if (category === "dress") {
+    return (
+      <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+        <path d="M35,40 Q50,32 65,40 L70,90 Q78,150 80,180 L20,180 Q22,150 30,90 Z" fill={color} />
+        <path d="M35,40 Q50,32 65,40 L62,55 Q50,50 38,55 Z" fill={gloss} opacity="0.25" />
+        <text x="50" y="115" textAnchor="middle" fontSize="6" fill={gloss} opacity="0.6"
+          style={{ fontFamily: "system-ui", letterSpacing: 2 }}>{brand}</text>
+      </svg>
+    );
+  }
+  // top (default)
+  return (
+    <svg viewBox="0 0 100 200" className="h-full w-full" preserveAspectRatio="xMidYMid meet" style={{ filter }}>
+      <path d="M22,42 L40,32 Q50,38 60,32 L78,42 L72,60 L66,55 L66,110 L34,110 L34,55 L28,60 Z" fill={color} />
+      <path d="M40,32 Q50,38 60,32 L58,46 Q50,50 42,46 Z" fill={shade} opacity="0.45" />
+      <path d="M22,42 L28,60 L34,55" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.5" />
+      <path d="M78,42 L72,60 L66,55" stroke={gloss} strokeWidth="0.6" fill="none" opacity="0.5" />
+      <text x="50" y="85" textAnchor="middle" fontSize="6" fill={gloss} opacity="0.7"
+        style={{ fontFamily: "system-ui", letterSpacing: 2 }}>{brand}</text>
     </svg>
   );
 }
