@@ -107,6 +107,7 @@ function IndexShell() {
           {/* Right column */}
           <div className="space-y-5 lg:col-span-3">
             <PiPayWallet />
+            <ProfileData />
             <MiniDashboard />
           </div>
         </div>
