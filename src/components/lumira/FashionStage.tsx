@@ -120,7 +120,7 @@ export function FashionStage() {
   const [mode, setMode] = useState<Mode>("live");
   const [activeBrandIdx, setActiveBrandIdx] = useState(0);
   const [openMall, setOpenMall] = useState<Brand | null>(null);
-  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string } | null>(null);
+  const [overlay, setOverlay] = useState<{ id: string; name: string; brand: string; gradient: string; category: Category; color: string; image?: string } | null>(null);
   const [progress, setProgress] = useState(0);
   const [trying, setTrying] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -161,13 +161,13 @@ export function FashionStage() {
   };
 
   const tryItem = (b: Brand, item: CatalogItem) => {
-    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color });
+    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image });
     runProgress();
   };
 
   const tryBrandDefault = () => {
     const item = brand.items[0];
-    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color });
+    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image });
     runProgress();
   };
 
