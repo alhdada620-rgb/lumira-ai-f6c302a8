@@ -192,37 +192,35 @@ export function FashionStage() {
   const avatarHeight = `${avatarHeightPct}%`;
   const avatarWidth = `${avatarWidthPct}%`;
 
+  // Anatomical zones (fractions of mannequin height; w = multiplier on mannequin width)
+  const AVATAR_ZONES: Record<Category, { y0: number; y1: number; w: number }> = {
+    top:       { y0: 0.18, y1: 0.55, w: 1.05 },
+    bottom:    { y0: 0.52, y1: 0.95, w: 0.95 },
+    dress:     { y0: 0.20, y1: 0.85, w: 1.10 },
+    accessory: { y0: 0.05, y1: 0.22, w: 0.70 },
+    lips:      { y0: 0.08, y1: 0.13, w: 0.30 },
+    cheeks:    { y0: 0.07, y1: 0.15, w: 0.45 },
+    eyes:      { y0: 0.06, y1: 0.11, w: 0.40 },
+  };
+
+  const mannBottomPct = 2;
+  const mannTopPct = 100 - (mannBottomPct + avatarHeightPct);
+
   /**
    * Compute garment placement (% of frame) based on the active mode,
    * the garment category, and — for the avatar — the live mannequin box.
-   * Returns inset values: top/bottom/width — centered horizontally.
    */
   const garmentFit = (category: Category | undefined) => {
     if (!category) return { top: 18, bottom: 14, width: 80 };
 
     if (mode === "avatar") {
-      // Mannequin occupies a vertical slab from `bottom: 2%` upward by avatarHeightPct
-      const mannBottom = 2;
-      const mannTop = 100 - (mannBottom + avatarHeightPct); // % from top
-      const mannWidth = avatarWidthPct;
-      // Anatomical zones expressed as fractions of mannequin height (0=head, 1=feet)
-      const zones: Record<Category, { y0: number; y1: number; w: number }> = {
-        top:       { y0: 0.18, y1: 0.55, w: 1.05 }, // chest -> waist
-        bottom:    { y0: 0.52, y1: 0.95, w: 0.95 }, // waist -> ankles
-        dress:     { y0: 0.20, y1: 0.85, w: 1.10 }, // shoulders -> knees
-        accessory: { y0: 0.05, y1: 0.22, w: 0.70 }, // head / scarf
-        lips:      { y0: 0.08, y1: 0.13, w: 0.30 },
-        cheeks:    { y0: 0.07, y1: 0.15, w: 0.45 },
-        eyes:      { y0: 0.06, y1: 0.11, w: 0.40 },
-      };
-      const z = zones[category];
-      const top = mannTop + z.y0 * avatarHeightPct;
-      const bottom = 100 - (mannTop + z.y1 * avatarHeightPct);
-      const width = Math.min(98, mannWidth * z.w);
+      const z = AVATAR_ZONES[category];
+      const top = mannTopPct + z.y0 * avatarHeightPct;
+      const bottom = 100 - (mannTopPct + z.y1 * avatarHeightPct);
+      const width = Math.min(98, avatarWidthPct * z.w);
       return { top, bottom, width };
     }
 
-    // Live mirror & uploaded photo — assume a roughly centered subject
     const zones: Record<Category, { top: number; bottom: number; width: number }> = {
       top:       { top: 26, bottom: 38, width: 72 },
       bottom:    { top: 56, bottom: 6,  width: 62 },
@@ -236,6 +234,17 @@ export function FashionStage() {
   };
 
   const fit = garmentFit(overlay?.category);
+
+  // Color-coded zones for the debug overlay
+  const ZONE_COLORS: Record<Category, string> = {
+    top: "#22d3ee",
+    bottom: "#a78bfa",
+    dress: "#f472b6",
+    accessory: "#facc15",
+    lips: "#fb7185",
+    cheeks: "#fda4af",
+    eyes: "#34d399",
+  };
 
   const tabs: { id: Mode; label: string; labelAr: string; icon: any }[] = [
     { id: "live", label: "Live Mirror", labelAr: "المرآة المباشرة", icon: Video },
