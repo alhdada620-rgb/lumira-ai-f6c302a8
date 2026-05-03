@@ -226,9 +226,18 @@ export function FashionStage() {
         </div>
 
         {/* Frame */}
-        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-accent/30 bg-background/40">
-          <div className="pointer-events-none absolute -inset-px rounded-xl shadow-[var(--glow-primary)]" />
-          <div className="absolute inset-0 hud-grid opacity-25" />
+        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-accent/30 bg-background/40">
+          {/* Luxury closet backdrop */}
+          <img
+            src={closetBackdrop}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+            style={{ filter: "brightness(0.55) saturate(1.15)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/60" />
+          <div className="pointer-events-none absolute -inset-px rounded-2xl shadow-[var(--glow-primary)]" />
+          <div className="absolute inset-0 hud-grid opacity-15" />
 
           {/* LIVE MIRROR */}
           {mode === "live" && (
