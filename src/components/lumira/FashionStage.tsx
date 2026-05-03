@@ -199,14 +199,18 @@ export function FashionStage() {
   };
 
   const tryItem = (b: Brand, item: CatalogItem) => {
-    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image });
+    const fabric = fabricOf(item);
+    setOverlay({ id: item.id, name: item.name, brand: b.name, gradient: item.gradient, category: item.category, color: item.color, image: item.image, fabric });
     runProgress();
+    fetchAdvisor({ brand: b.name, name: item.name, category: item.category, fabric });
   };
 
   const tryBrandDefault = () => {
     const item = brand.items[0];
-    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image });
+    const fabric = fabricOf(item);
+    setOverlay({ id: brand.id, name: brand.outfit, brand: brand.name, gradient: brand.tint, category: item.category, color: item.color, image: item.image, fabric });
     runProgress();
+    fetchAdvisor({ brand: brand.name, name: brand.outfit, category: item.category, fabric });
   };
 
   const amazonUrl = (q: string) =>
