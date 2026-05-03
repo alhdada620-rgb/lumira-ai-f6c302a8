@@ -33,11 +33,25 @@ export function HudJump() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
+  const [recent, setRecent] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const listboxId = "hud-jump-listbox";
   const labelId = "hud-jump-label";
+  const RECENT_KEY = "hud-jump-recent";
+  const RECENT_MAX = 4;
+
+  // Load recents from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(RECENT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setRecent(parsed.filter((id) => MODULES.some((m) => m.id === id)));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   // Open with Cmd/Ctrl+K or "/"
   useEffect(() => {
@@ -66,7 +80,7 @@ export function HudJump() {
     }
   }, [open]);
 
-  const results = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return MODULES;
     return MODULES.filter((m) =>
@@ -74,30 +88,72 @@ export function HudJump() {
     );
   }, [q]);
 
+  // Build a flat, unified list of rows (Recent first, then All) with section headers.
+  type Row =
+    | { kind: "header"; id: string; label: string }
+    | { kind: "item"; id: string; module: ModuleEntry; section: "recent" | "all" };
+
+  const rows: Row[] = useMemo(() => {
+    const out: Row[] = [];
+    const showRecent = !q.trim() && recent.length > 0;
+    if (showRecent) {
+      out.push({ kind: "header", id: "h-recent", label: isAr ? "المستخدم مؤخراً" : "Recent" });
+      for (const id of recent) {
+        const m = MODULES.find((x) => x.id === id);
+        if (m) out.push({ kind: "item", id: `recent-${m.id}`, module: m, section: "recent" });
+      }
+      out.push({ kind: "header", id: "h-all", label: isAr ? "جميع الوحدات" : "All modules" });
+    }
+    for (const m of filtered) {
+      out.push({ kind: "item", id: `all-${m.id}`, module: m, section: "all" });
+    }
+    return out;
+  }, [filtered, recent, q, isAr]);
+
+  const selectableIndices = useMemo(
+    () => rows.reduce<number[]>((acc, r, i) => (r.kind === "item" ? (acc.push(i), acc) : acc), []),
+    [rows],
+  );
+
+  const activeRowIndex = selectableIndices[active] ?? -1;
+  const activeRow = activeRowIndex >= 0 ? rows[activeRowIndex] : undefined;
+  const activeItem = activeRow && activeRow.kind === "item" ? activeRow.module : undefined;
+  const totalSelectable = selectableIndices.length;
+
   useEffect(() => { setActive(0); }, [q, open]);
 
   // Scroll active option into view for screen readers / keyboard users
   useEffect(() => {
-    if (!open) return;
-    const el = listRef.current?.querySelector<HTMLElement>(`#hud-jump-opt-${active}`);
+    if (!open || activeRowIndex < 0) return;
+    const el = listRef.current?.querySelector<HTMLElement>(`#hud-jump-opt-${activeRowIndex}`);
     el?.scrollIntoView({ block: "nearest" });
-  }, [active, open, results.length]);
+  }, [activeRowIndex, open]);
 
   const jump = (id: string) => {
+    setRecent((prev) => {
+      const next = [id, ...prev.filter((x) => x !== id)].slice(0, RECENT_MAX);
+      try { localStorage.setItem(RECENT_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
     setOpen(false);
     setQ("");
     setTimeout(() => highlight(id), 50);
   };
 
+  const clearRecent = () => {
+    setRecent([]);
+    try { localStorage.removeItem(RECENT_KEY); } catch { /* ignore */ }
+  };
+
   const resultsCountMessage = q.trim()
     ? isAr
-      ? `${results.length} نتيجة لـ "${q}"`
-      : `${results.length} ${results.length === 1 ? "result" : "results"} for "${q}"`
+      ? `${filtered.length} نتيجة لـ "${q}"`
+      : `${filtered.length} ${filtered.length === 1 ? "result" : "results"} for "${q}"`
     : isAr
-      ? `${results.length} وحدة متاحة`
-      : `${results.length} modules available`;
+      ? `${MODULES.length} وحدة متاحة${recent.length ? `، ${recent.length} مستخدمة مؤخراً` : ""}`
+      : `${MODULES.length} modules available${recent.length ? `, ${recent.length} recent` : ""}`;
 
-  const activeId = results[active] ? `hud-jump-opt-${active}` : undefined;
+  const activeId = activeRowIndex >= 0 ? `hud-jump-opt-${activeRowIndex}` : undefined;
 
   return (
     <>
@@ -150,24 +206,23 @@ export function HudJump() {
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown") {
                     e.preventDefault();
-                    setActive((i) => (results.length ? (i + 1) % results.length : 0));
+                    setActive((i) => (totalSelectable ? (i + 1) % totalSelectable : 0));
                   } else if (e.key === "ArrowUp") {
                     e.preventDefault();
-                    setActive((i) => (results.length ? (i - 1 + results.length) % results.length : 0));
+                    setActive((i) => (totalSelectable ? (i - 1 + totalSelectable) % totalSelectable : 0));
                   } else if (e.key === "Home") {
                     e.preventDefault();
                     setActive(0);
                   } else if (e.key === "End") {
                     e.preventDefault();
-                    setActive(Math.max(0, results.length - 1));
-                  } else if (e.key === "Enter" && results[active]) {
+                    setActive(Math.max(0, totalSelectable - 1));
+                  } else if (e.key === "Enter" && activeItem) {
                     e.preventDefault();
-                    jump(results[active].id);
+                    jump(activeItem.id);
                   } else if (e.key === "Escape") {
                     e.preventDefault();
                     setOpen(false);
                   } else if (e.key === "Tab") {
-                    // Keep focus inside the dialog
                     e.preventDefault();
                   }
                 }}
@@ -179,10 +234,10 @@ export function HudJump() {
             {/* Live region announces result count and active option for screen readers */}
             <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
               {resultsCountMessage}
-              {results[active] && `. ${isAr ? "النشط" : "Active"}: ${isAr ? results[active].labelAr : results[active].label}`}
+              {activeItem && `. ${isAr ? "النشط" : "Active"}: ${isAr ? activeItem.labelAr : activeItem.label}`}
             </div>
 
-            {results.length === 0 ? (
+            {totalSelectable === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-muted-foreground">
                 {isAr ? "لا توجد نتائج" : "No matches"}
               </div>
@@ -194,11 +249,37 @@ export function HudJump() {
                 aria-label={isAr ? "نتائج الوحدات" : "Module results"}
                 className="max-h-72 overflow-y-auto py-1"
               >
-                {results.map((m, i) => {
-                  const isActive = i === active;
+                {rows.map((row, i) => {
+                  if (row.kind === "header") {
+                    const isRecent = row.id === "h-recent";
+                    return (
+                      <li
+                        key={row.id}
+                        role="presentation"
+                        className="flex items-center justify-between px-4 pb-1 pt-2 text-[9px] uppercase tracking-[0.3em] text-muted-foreground/70"
+                      >
+                        <span>{row.label}</span>
+                        {isRecent && recent.length > 0 && (
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={clearRecent}
+                            className="text-[9px] uppercase tracking-widest text-muted-foreground/60 transition hover:text-accent"
+                            aria-label={isAr ? "مسح المستخدم مؤخراً" : "Clear recent"}
+                          >
+                            {isAr ? "مسح" : "Clear"}
+                          </button>
+                        )}
+                      </li>
+                    );
+                  }
+                  const isActive = i === activeRowIndex;
+                  const m = row.module;
+                  // selectable index for setActive on hover
+                  const selIdx = selectableIndices.indexOf(i);
                   return (
                     <li
-                      key={m.id}
+                      key={row.id}
                       id={`hud-jump-opt-${i}`}
                       role="option"
                       aria-selected={isActive}
@@ -206,7 +287,7 @@ export function HudJump() {
                       <button
                         type="button"
                         tabIndex={-1}
-                        onMouseEnter={() => setActive(i)}
+                        onMouseEnter={() => selIdx >= 0 && setActive(selIdx)}
                         onClick={() => jump(m.id)}
                         className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-start transition ${
                           isActive ? "bg-accent/15 text-accent" : "text-foreground hover:bg-primary/10"
@@ -220,7 +301,9 @@ export function HudJump() {
                             {isAr ? m.hintAr : m.hint}
                           </span>
                         </div>
-                        <span className="text-[9px] uppercase tracking-widest opacity-60" aria-hidden="true">↵</span>
+                        <span className="text-[9px] uppercase tracking-widest opacity-60" aria-hidden="true">
+                          {row.section === "recent" ? "★" : "↵"}
+                        </span>
                       </button>
                     </li>
                   );
