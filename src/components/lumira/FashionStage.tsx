@@ -470,22 +470,7 @@ export function FashionStage() {
           {/* 3D AVATAR */}
           {mode === "avatar" && (
             <div className="absolute inset-0 flex flex-col">
-              {/* Gender select */}
-              <div className="absolute left-1/2 top-3 z-20 flex -translate-x-1/2 gap-1 rounded-full border border-primary/30 bg-background/70 p-1 backdrop-blur">
-                {(["male", "female"] as const).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => profile.setGender(g)}
-                    className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.25em] transition ${
-                      profile.gender === g
-                        ? "bg-accent/20 text-accent shadow-[var(--glow-accent)]"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {g === "male" ? (isAr ? "ذكر" : "Male") : (isAr ? "أنثى" : "Female")}
-                  </button>
-                ))}
-              </div>
+              {/* gender toggle is now in the global header above the stage */}
 
               {/* Avatar stage */}
               <div className="relative flex-1">
