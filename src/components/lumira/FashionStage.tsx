@@ -124,9 +124,9 @@ const BRANDS: Brand[] = [
     tint: "linear-gradient(135deg, oklch(0.6 0.2 0 / 0.5), oklch(0.4 0.18 350 / 0.4))",
     items: [
       { id: "sep-1", name: "Velvet Matte Lipstick", tag: "Bestseller", category: "lips", color: "#a8254a", image: imgSephoraLipstick, query: "sephora velvet matte lipstick", gradient: "linear-gradient(135deg, oklch(0.55 0.22 25 / 0.5), oklch(0.4 0.18 15 / 0.4))" },
-      { id: "sep-2", name: "Liquid Glow Highlighter", tag: "New", category: "cheeks", color: "#f0d090", query: "sephora liquid glow highlighter", gradient: "linear-gradient(135deg, oklch(0.85 0.1 80 / 0.5), oklch(0.7 0.12 60 / 0.4))" },
-      { id: "sep-3", name: "Precision Eyeliner", tag: "Pro", category: "eyes", color: "#15161e", query: "sephora precision eyeliner", gradient: "linear-gradient(135deg, oklch(0.18 0.02 260 / 0.55), oklch(0.3 0.04 260 / 0.45))" },
-      { id: "sep-4", name: "Cloud Blush", tag: "Sheer", category: "cheeks", color: "#e69aa2", query: "sephora cloud blush", gradient: "linear-gradient(135deg, oklch(0.78 0.12 15 / 0.5), oklch(0.65 0.14 10 / 0.4))" },
+      { id: "sep-2", name: "Liquid Glow Highlighter", tag: "New", category: "cheeks", color: "#f0d090", image: imgSephoraHighlighter, query: "sephora liquid glow highlighter", gradient: "linear-gradient(135deg, oklch(0.85 0.1 80 / 0.5), oklch(0.7 0.12 60 / 0.4))" },
+      { id: "sep-3", name: "Precision Eyeliner", tag: "Pro", category: "eyes", color: "#15161e", image: imgSephoraEyeliner, query: "sephora precision eyeliner", gradient: "linear-gradient(135deg, oklch(0.18 0.02 260 / 0.55), oklch(0.3 0.04 260 / 0.45))" },
+      { id: "sep-4", name: "Cloud Blush", tag: "Sheer", category: "cheeks", color: "#e69aa2", image: imgSephoraBlush, query: "sephora cloud blush", gradient: "linear-gradient(135deg, oklch(0.78 0.12 15 / 0.5), oklch(0.65 0.14 10 / 0.4))" },
     ],
   },
 ];
