@@ -628,7 +628,7 @@ export function FashionStage() {
                     background:
                       "linear-gradient(115deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(255,255,255,0.05) 100%)",
                     boxShadow:
-                      "inset 0 0 80px color-mix(in oklab, var(--primary) 25%, transparent), inset 0 0 0 1px rgba(255,255,255,0.06)",
+                      `inset 0 0 ${refl.innerGlow}px color-mix(in oklab, var(--primary) 25%, transparent), inset 0 0 0 1px rgba(255,255,255,0.06)`,
                   }}
                 />
               )}
