@@ -1,5 +1,4 @@
-// انسخ الكود ده بالكامل وحطه في ملف Index.tsx عندك
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { HealthSkinAI } from "@/components/lumira/HealthSkinAI";
 import { FashionStage } from "@/components/lumira/FashionStage";
 import { PiPayWallet } from "@/components/lumira/PiPayWallet";
@@ -40,20 +39,31 @@ function Index() {
 function IndexShell() {
   const { t, lang } = useT();
   const isAr = lang === "ar";
+
   return (
-    <div className="relative min-h-screen">
-      <div className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: `url(${bgImg})` }} />
-      <main className="relative z-10 p-4">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">LUMIRA</h1>
-          <LanguageToggle />
+    <div className="relative min-h-screen bg-black overflow-x-hidden">
+      <CaptionsOverlay />
+      <div className="fixed inset-0 -z-10 bg-cover bg-center opacity-40" style={{ backgroundImage: `url(${bgImg})` }} />
+      
+      <main className="relative z-10 p-4 md:p-8">
+        <header className="flex justify-between items-center mb-10 border-b border-white/10 pb-4">
+           <h1 className="text-2xl tracking-[0.3em] font-light">LUMIRA</h1>
+           <div className="flex gap-4 items-center">
+             <LanguageToggle />
+             <span className="text-[10px] text-cyan-400">DEV: ISLAM ALI</span>
+           </div>
         </header>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-3"><HealthSkinAI /></div>
-          <div className="lg:col-span-6"><FashionStage /></div>
-          <div className="lg:col-span-3"><PiPayWallet /></div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3 space-y-6"><HealthSkinAI /><VoiceVisualizer /></div>
+          <div className="lg:col-span-6"><FashionStage /><SmartShopping /></div>
+          <div className="lg:col-span-3 space-y-6"><MiniDashboard /><PiPayWallet /><ProfileData /></div>
         </div>
       </main>
+      
+      <footer className="p-4 text-center text-[10px] opacity-50 tracking-widest">
+        #إسلام_علي | PI NETWORK ECOSYSTEM
+      </footer>
     </div>
   );
 }
