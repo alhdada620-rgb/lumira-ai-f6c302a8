@@ -1183,6 +1183,52 @@ function SliderRow({
   );
 }
 
+function VerticalRangeSlider({
+  label, value, unit, min, max, onChange,
+}: { label: string; value: number; unit: string; min: number; max: number; onChange: (n: number) => void }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/85 text-glow-accent">{label}</span>
+      <div className="relative flex h-24 w-3 items-center justify-center rounded-full border border-accent/30 bg-background/60 backdrop-blur shadow-[var(--glow-soft)]">
+        <input
+          type="range" min={min} max={max} value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="absolute h-3 w-24 -rotate-90 cursor-pointer accent-[oklch(0.82_0.15_200)]"
+          aria-label={label}
+        />
+      </div>
+      <span className="rounded-full border border-accent/40 bg-background/70 px-1.5 py-0.5 text-[9px] font-medium text-accent backdrop-blur">
+        {value}{unit}
+      </span>
+    </div>
+  );
+}
+
+function VerticalColorSlider({
+  label, value, palette, onChange, isAr,
+}: { label: string; value: string; palette: string[]; onChange: (hex: string) => void; isAr: boolean }) {
+  const idx = Math.max(0, palette.findIndex((c) => c.toLowerCase() === value.toLowerCase()));
+  const safeIdx = idx === -1 ? 0 : idx;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[9px] uppercase tracking-[0.18em] text-foreground/85">{label}</span>
+      <div className="relative flex h-24 w-3 items-center justify-center rounded-full border border-accent/30 bg-background/60 backdrop-blur shadow-[var(--glow-soft)]">
+        <input
+          type="range" min={0} max={palette.length - 1} value={safeIdx}
+          onChange={(e) => onChange(palette[Number(e.target.value)])}
+          className="absolute h-3 w-24 -rotate-90 cursor-pointer accent-[oklch(0.82_0.15_200)]"
+          aria-label={label}
+        />
+      </div>
+      <span
+        className="h-4 w-4 rounded-full border border-accent/60 shadow-[0_0_8px_var(--accent)]"
+        style={{ background: value }}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 function AvatarSilhouette({ gender, skin }: { gender: "male" | "female"; skin: string }) {
   // Glossy gradient for skin
   const gradId = `skin-${gender}`;
