@@ -531,7 +531,7 @@ exports[`Direction snapshots — LTR (en) > MiniDashboard matches LTR snapshot 1
         <div
           class="mt-1 font-light text-4xl tabular-nums text-foreground text-glow tracking-tight"
         >
-          12:27 AM
+          12:34 PM
         </div>
         <div
           class="mt-1 text-[11px] text-muted-foreground"
@@ -1500,7 +1500,7 @@ exports[`Direction snapshots — RTL (ar) > MiniDashboard matches RTL snapshot 1
         <div
           class="mt-1 font-light text-4xl tabular-nums text-foreground text-glow tracking-tight"
         >
-          12:27 AM
+          12:34 PM
         </div>
         <div
           class="mt-1 text-[11px] text-muted-foreground"
