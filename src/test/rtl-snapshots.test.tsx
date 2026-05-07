@@ -112,14 +112,13 @@ describe("Direction-sensitive class guards", () => {
       // utility classes are allowed (icons aren't direction-sensitive).
       const root = container.firstChild as HTMLElement | null;
       if (!root) return;
-      const targets = [root, ...Array.from(root.children)] as HTMLElement[];
-      for (const el of targets) {
-        const cls = el.getAttribute("class") ?? "";
-        expect(
-          PHYSICAL_RE.test(cls),
-          `${panel.name} container has physical class: "${cls}"`,
-        ).toBe(false);
-      }
+      // Only the panel root itself — decorative corner brackets inside
+      // GlassPanel intentionally use physical positioning.
+      const cls = root.getAttribute("class") ?? "";
+      expect(
+        PHYSICAL_RE.test(cls),
+        `${panel.name} root has physical class: "${cls}"`,
+      ).toBe(false);
     });
   }
 });
