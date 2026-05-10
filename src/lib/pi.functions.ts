@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const PI_API_BASE = "https://api.minepi.com/v2";
 
@@ -24,6 +25,7 @@ async function piFetch(path: string, init: RequestInit = {}): Promise<Record<str
 }
 
 export const approvePiPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ paymentId: z.string().min(1) }).parse(data))
   .handler(async ({ data }) => {
     await piFetch(`/payments/${data.paymentId}/approve`, { method: "POST" });
@@ -31,6 +33,7 @@ export const approvePiPayment = createServerFn({ method: "POST" })
   });
 
 export const completePiPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z.object({ paymentId: z.string().min(1), txid: z.string().min(1) }).parse(data),
   )
