@@ -25,7 +25,7 @@ interface PiPaymentCallbacks {
   onError: (error: Error, payment?: unknown) => void;
 }
 interface PiSDK {
-  init(opts: { version: "2.0"; sandbox?: boolean }): void;
+  init(opts: { version: "2.0"; sandbox?: boolean }): unknown;
   authenticate(
     scopes: string[],
     onIncompletePaymentFound: (p: { identifier: string; transaction?: { txid: string } }) => void,
@@ -79,6 +79,8 @@ export function PiPayWallet() {
 
     try {
       setState("auth");
+      // Await Pi.init() fully (treat as Promise) before any authenticate/createPayment call.
+      await Promise.resolve(window.Pi.init({ version: "2.0", sandbox: true }));
       await window.Pi.authenticate(["username", "payments"], handleIncomplete);
 
       setState("creating");
