@@ -86,11 +86,11 @@ function IndexShell() {
               <div className="absolute inset-3 rounded-full bg-background" />
             </div>
             <h1
-              className="font-light text-lg md:text-xl tracking-[0.4em] text-foreground text-glow"
+              className="text-gradient-neon text-lg md:text-xl font-extrabold tracking-[0.35em] md:tracking-[0.4em]"
               style={
                 isAr
-                  ? { fontFamily: "'Tajawal','Noto Kufi Arabic','Cairo',system-ui,sans-serif", letterSpacing: "0.2em" }
-                  : undefined
+                  ? { fontFamily: "'Tajawal','Noto Kufi Arabic','Cairo',system-ui,sans-serif", letterSpacing: "0.18em" }
+                  : { fontFamily: "'Inter', system-ui, sans-serif" }
               }
             >
               {isAr ? "لوميرا — صحة وأناقة" : "LUMIRA — HEALTH & ELEGANCE"}
