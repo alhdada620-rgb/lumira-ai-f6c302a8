@@ -12,6 +12,7 @@ import { LanguageToggle } from "./LanguageToggle";
 import { PiSignInButton } from "./PiSignInButton";
 import { HealthSkinAI } from "./HealthSkinAI";
 import { FashionStage } from "./FashionStage";
+import { VirtualTryOn } from "./VirtualTryOn";
 
 const SKIN_TONES = ["#f5d6b8", "#e6b48a", "#d9a37a", "#b8835a", "#8a5a3a", "#5a3820"];
 const HAIR_COLORS = ["#1a0f08", "#2a1a10", "#5a3820", "#8a5a3a", "#c89a5a", "#e8c89a", "#a52a2a", "#222"];
@@ -134,7 +135,12 @@ export function MirrorStageLayout({ onBack }: Props) {
           <div className="mt-4">
             {openPanel === "skin" && <HealthSkinAI />}
             {openPanel === "makeup" && <FashionStage />}
-            {openPanel === "style" && <FashionStage />}
+            {openPanel === "style" && (
+              <div className="space-y-4">
+                <VirtualTryOn />
+                <FashionStage />
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
