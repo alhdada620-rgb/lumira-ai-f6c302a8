@@ -26,8 +26,9 @@ const PANELS = [
   },
   {
     id: "style",
-    btnEn: /^Style$/i,
-    btnAr: /^الستايل$/,
+    // Category button accessible name concatenates title + subtitle
+    btnEn: /Style\s+Custom outfit/i,
+    btnAr: /الستايل\s+مولّد إطلالات/,
     titleEn: /Style Studio/i,
     titleAr: /ستوديو الستايل/,
   },
