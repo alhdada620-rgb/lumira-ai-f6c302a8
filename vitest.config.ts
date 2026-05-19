@@ -14,7 +14,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov", "json-summary"],
-      reportsDirectory: "./coverage",
+      reportDir: "./coverage",   // ✨ التصحيح هنا
       include: ["src/components/lumira/**", "src/routes/index.tsx", "src/i18n/**"],
       exclude: ["src/test/**", "**/*.d.ts", "src/routeTree.gen.ts"],
       thresholds: {
