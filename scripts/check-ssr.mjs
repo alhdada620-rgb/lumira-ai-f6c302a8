@@ -15,10 +15,11 @@
  * Exits non-zero on failure so the build (and therefore publish) aborts.
  */
 
-import { existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve, dirname, relative, isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { execSync } from "node:child_process";
+import { findSourceMap, SourceMap } from "node:module";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const log = {
@@ -41,12 +42,79 @@ const ALL_PATTERNS = new RegExp(
 const resolutionErrors = [];
 const jsErrors = [];
 
+// ── Sourcemap resolution helpers ────────────────────────────────────────
+// Cache loaded SourceMap instances by absolute generated-file path.
+const smCache = new Map();
+
+function loadSourceMapFor(absPath) {
+  if (smCache.has(absPath)) return smCache.get(absPath);
+  let sm = null;
+  try {
+    // First try Node's runtime cache (works for already-imported modules).
+    sm = findSourceMap(absPath) ?? null;
+    if (!sm) {
+      // Fall back to reading the sibling .map file from disk.
+      const mapPath = absPath + ".map";
+      if (existsSync(mapPath)) {
+        const payload = JSON.parse(readFileSync(mapPath, "utf8"));
+        sm = new SourceMap(payload);
+      }
+    }
+  } catch {
+    sm = null;
+  }
+  smCache.set(absPath, sm);
+  return sm;
+}
+
+function mapFrame(absPath, line, column) {
+  const sm = loadSourceMapFor(absPath);
+  if (!sm) return null;
+  try {
+    // Node's SourceMap API is 0-indexed for both line and column.
+    const entry = sm.findEntry(Math.max(0, line - 1), Math.max(0, column - 1));
+    if (!entry || !entry.originalSource) return null;
+    let src = entry.originalSource;
+    if (src.startsWith("file://")) src = fileURLToPath(src);
+    if (isAbsolute(src)) {
+      const rel = relative(ROOT, src);
+      if (!rel.startsWith("..")) src = rel;
+    }
+    return {
+      source: src,
+      line: (entry.originalLine ?? 0) + 1,
+      column: (entry.originalColumn ?? 0) + 1,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Resolve any "<path>:<line>:<col>" reference inside a string to original source.
+// Returns an array of "→ src/foo.ts:12:3" annotation strings (deduped).
+function resolveReferences(text) {
+  const out = new Set();
+  // Match absolute paths, file:// URLs, or dist-relative paths.
+  const re = /(?:file:\/\/)?((?:\/|[A-Za-z]:\\)[^\s:()'"]+|dist\/[^\s:()'"]+):(\d+):(\d+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    let p = m[1];
+    if (!isAbsolute(p)) p = resolve(ROOT, p);
+    if (!existsSync(p)) continue;
+    const mapped = mapFrame(p, Number(m[2]), Number(m[3]));
+    if (mapped) out.add(`→ ${mapped.source}:${mapped.line}:${mapped.column}`);
+  }
+  return [...out];
+}
+
 function addResolution(source, message) {
-  resolutionErrors.push({ source, message: message.trim().slice(0, 300) });
+  const refs = resolveReferences(message);
+  resolutionErrors.push({ source, message: message.trim().slice(0, 300), refs });
   failed = true;
 }
 function addJsError(source, message) {
-  jsErrors.push({ source, message: message.trim().slice(0, 300) });
+  const refs = resolveReferences(message);
+  jsErrors.push({ source, message: message.trim().slice(0, 300), refs });
   failed = true;
 }
 
@@ -67,31 +135,24 @@ function printSummary() {
   }
   console.log("╠══════════════════════════════════════════════════════════════╣");
 
-  if (resCount) {
-    console.log("║  Top module-resolution failures:                             ║");
-    const topRes = resolutionErrors.slice(0, 5);
-    topRes.forEach((e, i) => {
+  const renderGroup = (title, list) => {
+    console.log(`║  ${title.padEnd(60)}║`);
+    list.slice(0, 5).forEach((e, i) => {
       const line = `  ${i + 1}. [${e.source}] ${e.message}`.slice(0, 62);
       console.log(`║${line.padEnd(62)}║`);
+      (e.refs ?? []).slice(0, 3).forEach((r) => {
+        const refLine = `      ${r}`.slice(0, 62);
+        console.log(`║${refLine.padEnd(62)}║`);
+      });
     });
-    if (resCount > 5) {
-      console.log(`║  ... and ${resCount - 5} more                            ║`);
+    if (list.length > 5) {
+      console.log(`║  ... and ${list.length - 5} more`.padEnd(63) + "║");
     }
     console.log("╠══════════════════════════════════════════════════════════════╣");
-  }
+  };
 
-  if (jsCount) {
-    console.log("║  Top JS runtime/syntax failures:                             ║");
-    const topJs = jsErrors.slice(0, 5);
-    topJs.forEach((e, i) => {
-      const line = `  ${i + 1}. [${e.source}] ${e.message}`.slice(0, 62);
-      console.log(`║${line.padEnd(62)}║`);
-    });
-    if (jsCount > 5) {
-      console.log(`║  ... and ${jsCount - 5} more                            ║`);
-    }
-    console.log("╠══════════════════════════════════════════════════════════════╣");
-  }
+  if (resCount) renderGroup("Top module-resolution failures:", resolutionErrors);
+  if (jsCount)  renderGroup("Top JS runtime/syntax failures:", jsErrors);
 
   const status = failed ? "FAILED  — Fix before publishing." : "PASSED";
   const statusColor = failed ? "\x1b[31m" : "\x1b[32m";
@@ -146,13 +207,20 @@ if (existsSync(serverBundle)) {
     log.ok("SSR bundle imports cleanly (no missing modules / no throw).");
   } catch (e) {
     const msg   = String(e?.message ?? e);
+    const stack = String(e?.stack ?? msg);
     const isResolution = RESOLUTION_PATTERNS.test(msg) || e?.code === "ERR_MODULE_NOT_FOUND";
     const isJSError    = JS_ERROR_PATTERNS.test(msg);
 
     if (isResolution || isJSError) {
       log.err(`SSR bundle import failed: ${msg.split("\n")[0]}`);
-      if (isResolution) addResolution("SSR bundle", msg.split("\n")[0]);
-      if (isJSError)    addJsError("SSR bundle", msg.split("\n")[0]);
+      // Map any "dist/server/...:line:col" frames in the stack back to source.
+      const refs = resolveReferences(stack);
+      if (refs.length) {
+        log.info("Mapped to source:");
+        refs.slice(0, 5).forEach((r) => console.error(`    ${r}`));
+      }
+      if (isResolution) addResolution("SSR bundle", stack);
+      if (isJSError)    addJsError("SSR bundle", stack);
     } else {
       // Non-resolution errors (e.g. env reads at top-level) are acceptable
       // here — Workers runtime will handle them. We only gate on hard errors.
