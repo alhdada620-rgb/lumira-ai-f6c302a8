@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+        // تهيئة الـ SDK فور تحميل الصفحة
+        window.onload = function() {
+            if (window.Pi) {
+                window.Pi.init({ version: "1.5", sandbox: true });
+                console.log("Pi SDK Initialized");
+            }
+        };
+    </script>
+</head>
+<body style="text-align:center; padding-top:50px; font-family:sans-serif;">
+    <h2>Lumira Test Payment</h2>
+    <button id="pay-btn" style="padding:20px; background:purple; color:white; border-radius:15px; font-size:18px;">
+        إضغط هنا لفتح المحفظة ودفع 0.1 Pi
+    </button>
+    <p id="status" style="margin-top:20px; color:blue;"></p>
+
+    <script>
+        document.getElementById('pay-btn').onclick = async function() {
+            const status = document.getElementById('status');
+            
+            if (!window.Pi) {
+                alert("برجاء فتح الرابط داخل Pi Browser");
+                return;
+            }
+
+            status.innerText = "جاري الاتصال بالمحفظة...";
+
+            try {
+                // طلب التوثيق أولاً لإيقاظ الـ SDK
+                await window.Pi.authenticate(['payments']);
+                
+                // إنشاء عملية الدفع
+                await window.Pi.createPayment({
+                    amount: 0.1,
+                    memo: "Final Step 10 Verification",
+                    metadata: { orderId: "12345" }
+                }, {
+                    onReadyForServerApproval: (id) => { status.innerText = "تمت الموافقة، جاري التأكيد..."; },
+                    onReadyForServerCompletion: (id, tx) => { 
+                        status.style.color = "green";
+                        status.innerText = "مبروك! تمت العملية بنجاح.";
+                        alert("تم الدفع! الخطوة 10 المفروض تنور أخضر.");
+                    },
+                    onCancel: (id) => { status.innerText = "تم إلغاء العملية."; },
+                    onError: (err) => { status.innerText = "خطأ: " + err.message; }
+                });
+            } catch (err) {
+                status.innerText = "خطأ في التوثيق: " + err.message;
+            }
+        };
+    </script>
+</body>
+</html>
