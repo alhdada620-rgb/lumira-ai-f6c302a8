@@ -207,13 +207,20 @@ if (existsSync(serverBundle)) {
     log.ok("SSR bundle imports cleanly (no missing modules / no throw).");
   } catch (e) {
     const msg   = String(e?.message ?? e);
+    const stack = String(e?.stack ?? msg);
     const isResolution = RESOLUTION_PATTERNS.test(msg) || e?.code === "ERR_MODULE_NOT_FOUND";
     const isJSError    = JS_ERROR_PATTERNS.test(msg);
 
     if (isResolution || isJSError) {
       log.err(`SSR bundle import failed: ${msg.split("\n")[0]}`);
-      if (isResolution) addResolution("SSR bundle", msg.split("\n")[0]);
-      if (isJSError)    addJsError("SSR bundle", msg.split("\n")[0]);
+      // Map any "dist/server/...:line:col" frames in the stack back to source.
+      const refs = resolveReferences(stack);
+      if (refs.length) {
+        log.info("Mapped to source:");
+        refs.slice(0, 5).forEach((r) => console.error(`    ${r}`));
+      }
+      if (isResolution) addResolution("SSR bundle", stack);
+      if (isJSError)    addJsError("SSR bundle", stack);
     } else {
       // Non-resolution errors (e.g. env reads at top-level) are acceptable
       // here — Workers runtime will handle them. We only gate on hard errors.
