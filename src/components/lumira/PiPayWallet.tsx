@@ -119,6 +119,7 @@ export function PiPayWallet() {
             setErrorMsg(isAr ? "حدث خطأ في الدفع. حاول مرة أخرى." : "A payment error occurred. Please try again.");
             setState("error");
           },
+        },
       );
     } catch (e) {
       console.error("payWithPi failed", e);
