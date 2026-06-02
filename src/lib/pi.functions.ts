@@ -1,6 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+/**
+ * Look up the verified Pi UID linked to a Supabase user. Returns null if the
+ * user has not signed in with Pi yet (no linked identity).
+ */
+async function getLinkedPiUid(userId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("pi_identities")
+    .select("pi_uid")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("pi_identities lookup failed", error);
+    throw new Error("Payment service error. Please try again.");
+  }
+  return data?.pi_uid ?? null;
+}
 
 const PI_API_BASE = "https://api.minepi.com/v2";
 
