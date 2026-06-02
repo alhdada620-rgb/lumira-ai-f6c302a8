@@ -79,6 +79,17 @@ export const approvePiPayment = createServerFn({ method: "POST" })
       throw new Error("Payment was cancelled.");
     }
 
+    // Pi-side ownership check: the payment's Pi user_uid must match the
+    // verified Pi UID linked to the authenticated Supabase user. Prevents
+    // an attacker from claiming someone else's paymentId as their own.
+    const linkedPiUid = await getLinkedPiUid(userId);
+    if (!linkedPiUid) {
+      throw new Error("Pi account not linked. Please sign in with Pi first.");
+    }
+    if (piPayment.user_uid && piPayment.user_uid !== linkedPiUid) {
+      throw new Error("Forbidden");
+    }
+
     // Claim or verify ownership of this payment id (RLS enforces user_id = auth.uid()).
     const { data: existing, error: selErr } = await supabase
       .from("pi_payments")
