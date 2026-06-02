@@ -166,6 +166,16 @@ export const completePiPayment = createServerFn({ method: "POST" })
       throw new Error("Transaction not yet verified on Pi network.");
     }
 
+    // Pi-side ownership check (defense in depth).
+    const linkedPiUid = await getLinkedPiUid(userId);
+    if (!linkedPiUid) {
+      throw new Error("Pi account not linked. Please sign in with Pi first.");
+    }
+    if (piPayment.user_uid && piPayment.user_uid !== linkedPiUid) {
+      throw new Error("Forbidden");
+    }
+
+
     await piFetch(`/payments/${data.paymentId}/complete`, {
       method: "POST",
       body: JSON.stringify({ txid: data.txid }),
