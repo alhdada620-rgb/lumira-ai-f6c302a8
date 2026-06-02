@@ -1,6 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+/**
+ * Look up the verified Pi UID linked to a Supabase user. Returns null if the
+ * user has not signed in with Pi yet (no linked identity).
+ */
+async function getLinkedPiUid(userId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("pi_identities")
+    .select("pi_uid")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("pi_identities lookup failed", error);
+    throw new Error("Payment service error. Please try again.");
+  }
+  return data?.pi_uid ?? null;
+}
 
 const PI_API_BASE = "https://api.minepi.com/v2";
 
@@ -59,6 +77,17 @@ export const approvePiPayment = createServerFn({ method: "POST" })
     }
     if (piPayment.status?.cancelled) {
       throw new Error("Payment was cancelled.");
+    }
+
+    // Pi-side ownership check: the payment's Pi user_uid must match the
+    // verified Pi UID linked to the authenticated Supabase user. Prevents
+    // an attacker from claiming someone else's paymentId as their own.
+    const linkedPiUid = await getLinkedPiUid(userId);
+    if (!linkedPiUid) {
+      throw new Error("Pi account not linked. Please sign in with Pi first.");
+    }
+    if (piPayment.user_uid && piPayment.user_uid !== linkedPiUid) {
+      throw new Error("Forbidden");
     }
 
     // Claim or verify ownership of this payment id (RLS enforces user_id = auth.uid()).
@@ -136,6 +165,16 @@ export const completePiPayment = createServerFn({ method: "POST" })
     if (piPayment.transaction?.verified === false) {
       throw new Error("Transaction not yet verified on Pi network.");
     }
+
+    // Pi-side ownership check (defense in depth).
+    const linkedPiUid = await getLinkedPiUid(userId);
+    if (!linkedPiUid) {
+      throw new Error("Pi account not linked. Please sign in with Pi first.");
+    }
+    if (piPayment.user_uid && piPayment.user_uid !== linkedPiUid) {
+      throw new Error("Forbidden");
+    }
+
 
     await piFetch(`/payments/${data.paymentId}/complete`, {
       method: "POST",

@@ -53,6 +53,17 @@ export const verifyPiAccessToken = createServerFn({ method: "POST" })
       throw new Error("Authentication failed. Please try again.");
     }
 
+    // If the caller already has a Supabase session, validate it and link the
+    // pi_uid to that user. This mapping is what lets payment server functions
+    // enforce ownership (pi_payment.user_uid === user's pi_uid).
+    let supabaseUserId: string | null = null;
+    const authHeader = req?.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const { data: authData } = await supabaseAdmin.auth.getUser(token);
+      if (authData?.user?.id) supabaseUserId = authData.user.id;
+    }
+
     // Persist the server-validated Pi identity. Service-role client bypasses
     // RLS; the table grants no privileges to anon/authenticated, so this row
     // can only ever be written by trusted server code.
@@ -62,6 +73,7 @@ export const verifyPiAccessToken = createServerFn({ method: "POST" })
         {
           pi_uid: me.uid,
           pi_username: me.username,
+          ...(supabaseUserId ? { user_id: supabaseUserId } : {}),
           last_verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
