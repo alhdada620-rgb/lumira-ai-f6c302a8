@@ -20,8 +20,32 @@ function injectedHeadScriptsStub(): Plugin {
   };
 }
 
+/**
+ * Production-only guard: fail the build if index.html still contains a
+ * `/src/index.tsx` script tag. That path is dev-only (Vite serves the
+ * uncompiled source); in production it 404s to the SPA fallback HTML and
+ * Pi Browser dies with "Failed to load module script ... MIME type
+ * 'text/html'". The SSR shell in src/routes/__root.tsx (<Scripts />) is
+ * what should inject the hashed compiled bundle.
+ */
+function forbidDevSrcScriptInIndexHtml(): Plugin {
+  return {
+    name: "lovable:forbid-dev-src-script-in-index-html",
+    apply: "build",
+    enforce: "pre",
+    transformIndexHtml(html: string) {
+      if (/<script\b[^>]*\bsrc=["']\/src\/index\.tsx["'][^>]*>/i.test(html)) {
+        throw new Error(
+          "[lovable] index.html references /src/index.tsx — that is a Vite dev-only path and breaks production (Pi Browser shows a MIME-type error). Remove the <script type=\"module\" src=\"/src/index.tsx\"> tag; the SSR shell in src/routes/__root.tsx injects the compiled bundle via <Scripts />."
+        );
+      }
+      return html;
+    },
+  };
+}
+
 export default defineConfig({
   vite: {
-    plugins: [injectedHeadScriptsStub()],
+    plugins: [injectedHeadScriptsStub(), forbidDevSrcScriptInIndexHtml()],
   },
 });
