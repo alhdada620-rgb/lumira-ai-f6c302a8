@@ -1,7 +1,6 @@
 import { Mars, Venus, ArrowRight } from "lucide-react";
 import { useProfile, type Gender } from "./profile-context";
 import { useT } from "./i18n";
-import { PiSignInButton } from "./PiSignInButton";
 import { LanguageToggle } from "./LanguageToggle";
 import HUMAN_MALE from "@/assets/avatar-male.png";
 import HUMAN_FEMALE from "@/assets/avatar-female.png";
