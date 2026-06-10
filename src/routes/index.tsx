@@ -5,7 +5,7 @@ import { WalletProvider } from "@/components/lumira/wallet-context";
 import { ProfileProvider } from "@/components/lumira/profile-context";
 import { SkinProvider } from "@/components/lumira/skin-context";
 import { LanguageProvider, useT } from "@/components/lumira/i18n";
-import { PiAuthProvider } from "@/components/lumira/pi-auth-context";
+import { PiAuthProvider, usePiAuth } from "@/components/lumira/pi-auth-context";
 import { OutfitProvider } from "@/components/lumira/outfit-context";
 import { LandingGate } from "@/components/lumira/LandingGate";
 import { MirrorStageLayout } from "@/components/lumira/MirrorStageLayout";
