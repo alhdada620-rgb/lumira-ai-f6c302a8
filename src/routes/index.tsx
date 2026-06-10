@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CameraProvider } from "@/components/lumira/camera-context";
 import { WalletProvider } from "@/components/lumira/wallet-context";
 import { ProfileProvider } from "@/components/lumira/profile-context";
 import { SkinProvider } from "@/components/lumira/skin-context";
 import { LanguageProvider, useT } from "@/components/lumira/i18n";
-import { PiAuthProvider } from "@/components/lumira/pi-auth-context";
+import { PiAuthProvider, usePiAuth } from "@/components/lumira/pi-auth-context";
 import { OutfitProvider } from "@/components/lumira/outfit-context";
 import { LandingGate } from "@/components/lumira/LandingGate";
 import { MirrorStageLayout } from "@/components/lumira/MirrorStageLayout";
@@ -55,6 +55,12 @@ function Shell() {
   const [stage, setStage] = useState<"landing" | "mirror">("landing");
   const { t, lang } = useT();
   const isAr = lang === "ar";
+  const { user } = usePiAuth();
+
+  // Auto-enter dashboard once Pi auth resolves (real user OR demo fallback after timeout).
+  useEffect(() => {
+    if (user && stage === "landing") setStage("mirror");
+  }, [user, stage]);
 
   return (
     <>
