@@ -55,13 +55,22 @@ function Index() {
 function Shell() {
   // Pi Browser guard: skip any login/landing entirely and go straight to Dashboard.
   const [stage, setStage] = useState<"landing" | "mirror">("mirror");
+  const [isMounted, setIsMounted] = useState(false);
   const { t, lang } = useT();
   const isAr = lang === "ar";
   const { user } = usePiAuth();
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (stage !== "mirror") setStage("mirror");
   }, [user, stage]);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
